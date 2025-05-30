@@ -10,6 +10,8 @@ public class GameManager : MonoBehaviour
     
     private void Awake()
     {
+
+        //Run the initialize grid function
         gridManager.InitializeGrid();
         
     }
@@ -18,6 +20,7 @@ public class GameManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.R))
         {
+            //Run the initialize grid function
             Awake();
         }
     }

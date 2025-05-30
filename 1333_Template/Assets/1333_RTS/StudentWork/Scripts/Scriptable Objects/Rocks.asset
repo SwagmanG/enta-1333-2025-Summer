@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7679c5cc56f440745a56255a88d56d82, type: 3}
   m_Name: Rocks
   m_EditorClassIdentifier: 
-  terrainName: Default
-  gizmoColor: {r: 0.3301887, g: 0.27958104, b: 0.25698647, a: 1}
+  terrainName: Rocks
+  gizmoColor: {r: 0.84276724, g: 0.5044755, b: 0.37898016, a: 1}
   walkable: 1
   movementCost: 8
