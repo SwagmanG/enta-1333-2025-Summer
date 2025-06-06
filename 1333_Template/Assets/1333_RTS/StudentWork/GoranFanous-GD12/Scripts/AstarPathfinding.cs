@@ -6,49 +6,50 @@ using UnityEngine;
 public class AstarPathfinding : MonoBehaviour
 {
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private float stepDelay = 0.05f; // Delay between steps during pathfinding visualization
+    [SerializeField] private float stepDelay = 0.05f; // Delay between pathfinding steps for visualization
 
-    private List<GridNode> finalPathToGoal;                   // Final computed path from start to goal
-    private List<GridNode> visualizedOpenNodes;              // Nodes in the open set for debug visualization
-    private HashSet<GridNode> visualizedClosedNodes;         // Nodes in the closed set for debug visualization
-    private GridNode currentlyExpandedNode;                  // Node currently being processed
+    private List<GridNode> finalPathToGoal; // Stores the final computed path from start to goal
+    private List<GridNode> visualizedOpenNodes; // Stores nodes in the open set for debug visualization
+    private HashSet<GridNode> visualizedClosedNodes; // Stores nodes in the closed set for debug visualization
+    private GridNode currentlyExpandedNode; // The node currently being processed in the algorithm
 
-   
-    // Starts the A* pathfinding algorithm with visualization.
-   
-    public void VisualizePath(Vector3 worldStartPosition, Vector3 worldGoalPosition)
+    public bool ShowDebugVisualization = true; // Toggle to show open/closed/expanded node visualization
+    public bool ShowFinalPathVisualization = true; // Toggle to show the final computed path
+
+    // Public entry point to start the pathfinding process
+    public void VisualizePath(Vector3 worldStartPosition, Vector3 worldGoalPosition, UnitController unit)
     {
-        StopAllCoroutines(); // Stop any ongoing pathfinding
-        StartCoroutine(FindPathRoutine(worldStartPosition, worldGoalPosition));
+        StopAllCoroutines(); // Stop any previously running pathfinding
+        StartCoroutine(FindPathRoutine(worldStartPosition, worldGoalPosition, unit));
     }
 
-  
-    // Coroutine that performs A* pathfinding step by step.
-   
-    private IEnumerator FindPathRoutine(Vector3 worldStartPosition, Vector3 worldGoalPosition)
+    // Main coroutine that performs the A* pathfinding logic step-by-step
+    private IEnumerator FindPathRoutine(Vector3 worldStartPosition, Vector3 worldGoalPosition, UnitController unit)
     {
+        // Convert world positions to grid coordinates
         Vector2Int startGridPosition = gridManager.GetGridPosFromWorld(worldStartPosition);
         Vector2Int goalGridPosition = gridManager.GetGridPosFromWorld(worldGoalPosition);
 
         GridNode startNode = gridManager.GetNode(startGridPosition.x, startGridPosition.y);
         GridNode goalNode = gridManager.GetNode(goalGridPosition.x, goalGridPosition.y);
 
+        // Validate start and goal nodes
         if (startNode == null || goalNode == null || !startNode.Walkable || !goalNode.Walkable)
         {
             Debug.LogWarning("Invalid or unwalkable start or goal node.");
             yield break;
         }
 
-        // Initialize the open and closed sets
+        // Setup open and closed sets for A* search
         List<GridNode> openSet = new List<GridNode> { startNode };
         HashSet<GridNode> closedSet = new HashSet<GridNode>();
 
-        // Clear visualization sets
+        // Initialize visualization state
         visualizedOpenNodes = new List<GridNode>();
         visualizedClosedNodes = new HashSet<GridNode>();
         currentlyExpandedNode = null;
 
-        // Reset all node scores before beginning the search
+        // Reset cost values on all nodes before starting
         foreach (GridNode node in gridManager.gridNodes)
         {
             node.GCost = int.MaxValue;
@@ -57,27 +58,37 @@ public class AstarPathfinding : MonoBehaviour
             node.Connection = Vector3.zero;
         }
 
-        // Initialize start node cost
+        // Set up starting node
         startNode.GCost = 0;
         startNode.HCost = CalculateHeuristic(startNode, goalNode);
         startNode.FCost = startNode.HCost;
 
+        // Main A* loop
         while (openSet.Count > 0)
         {
             GridNode nodeWithLowestFCost = GetLowestFCostNode(openSet);
             currentlyExpandedNode = nodeWithLowestFCost;
 
+            // If goal is reached, reconstruct path and pass it to the unit
             if (nodeWithLowestFCost == goalNode)
             {
                 finalPathToGoal = ReconstructPath(startNode, goalNode);
                 visualizedOpenNodes = new List<GridNode>(openSet);
                 visualizedClosedNodes = new HashSet<GridNode>(closedSet);
-                yield break;
+
+                if (finalPathToGoal != null && unit != null)
+                {
+                    unit.FollowPath(finalPathToGoal); // Tell unit to follow the computed path
+                }
+
+                yield break; // Exit coroutine
             }
 
+            // Move current node from open to closed set
             openSet.Remove(nodeWithLowestFCost);
             closedSet.Add(nodeWithLowestFCost);
 
+            // Check all valid neighbors
             foreach (GridNode neighborNode in GetWalkableNeighbors(nodeWithLowestFCost))
             {
                 if (closedSet.Contains(neighborNode))
@@ -97,7 +108,7 @@ public class AstarPathfinding : MonoBehaviour
                 }
             }
 
-            // Update sets for visualization after each node expansion
+            // Update visualizations after expanding the node
             visualizedOpenNodes = new List<GridNode>(openSet);
             visualizedClosedNodes = new HashSet<GridNode>(closedSet);
 
@@ -108,9 +119,7 @@ public class AstarPathfinding : MonoBehaviour
         finalPathToGoal = null;
     }
 
-    
-    // Calculates Manhattan heuristic distance between two nodes.
-
+    // Calculates the Manhattan distance between two nodes as heuristic
     private int CalculateHeuristic(GridNode fromNode, GridNode toNode)
     {
         Vector2Int fromPos = gridManager.GetGridPosFromWorld(fromNode.WorldPosition);
@@ -120,9 +129,7 @@ public class AstarPathfinding : MonoBehaviour
         return (distanceX + distanceY) * 5;
     }
 
-    
-    // Returns right angle walkable neighbors of a given node.
-  
+    // Gets all walkable orthogonal (non-diagonal) neighbors
     private List<GridNode> GetWalkableNeighbors(GridNode centerNode)
     {
         List<GridNode> neighbors = new List<GridNode>();
@@ -141,9 +148,7 @@ public class AstarPathfinding : MonoBehaviour
         return neighbors;
     }
 
-    
-    // Reconstructs the path from goal to start using backtracking.
-    
+    // Traces the path back from goal to start using node.Connection
     private List<GridNode> ReconstructPath(GridNode startNode, GridNode goalNode)
     {
         List<GridNode> reconstructedPath = new List<GridNode>();
@@ -157,13 +162,11 @@ public class AstarPathfinding : MonoBehaviour
         }
 
         reconstructedPath.Add(startNode);
-        reconstructedPath.Reverse();
+        reconstructedPath.Reverse(); // Reverse to get path from start to goal
         return reconstructedPath;
     }
 
-    
-    // Returns the node with the lowest F cost from the list.
-    
+    // Finds the node with the lowest F cost (and lowest H as tie-breaker)
     private GridNode GetLowestFCostNode(List<GridNode> nodeList)
     {
         GridNode bestNode = nodeList[0];
@@ -178,65 +181,69 @@ public class AstarPathfinding : MonoBehaviour
         return bestNode;
     }
 
-    
-    // Draws debug gizmos for visualization of open/closed sets and the final path.
-
+    // Draws debug Gizmos in the scene view for visual feedback
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying) return;
 
-        // Draw Closed Set - Red cubes
-        if (visualizedClosedNodes != null)
+        if (ShowDebugVisualization)
         {
-            Gizmos.color = Color.red;
-            foreach (GridNode node in visualizedClosedNodes)
-                Gizmos.DrawCube(node.WorldPosition + Vector3.up * 0.05f, Vector3.one * 0.25f);
-        }
+            // Red cubes for closed set
+            if (visualizedClosedNodes != null)
+            {
+                Gizmos.color = Color.red;
+                foreach (GridNode node in visualizedClosedNodes)
+                    Gizmos.DrawCube(node.WorldPosition + Vector3.up * 0.05f, Vector3.one * 0.25f);
+            }
 
-        // Draw Open Set - Blue spheres
-        if (visualizedOpenNodes != null)
-        {
-            Gizmos.color = Color.blue;
-            foreach (GridNode node in visualizedOpenNodes)
-                Gizmos.DrawSphere(node.WorldPosition + Vector3.up * 0.1f, 0.15f);
-        }
+            // Blue spheres for open set
+            if (visualizedOpenNodes != null)
+            {
+                Gizmos.color = Color.blue;
+                foreach (GridNode node in visualizedOpenNodes)
+                    Gizmos.DrawSphere(node.WorldPosition + Vector3.up * 0.1f, 0.15f);
+            }
 
-        // Draw Currently Expanded Node - Yellow
-        if (currentlyExpandedNode != null)
-        {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawSphere(currentlyExpandedNode.WorldPosition + Vector3.up * 0.25f, 0.2f);
+            // Yellow sphere for currently expanded node
+            if (currentlyExpandedNode != null)
+            {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawSphere(currentlyExpandedNode.WorldPosition + Vector3.up * 0.25f, 0.2f);
 
 #if UNITY_EDITOR
-            // Show movement cost for neighbors in editor
-            List<GridNode> neighbors = GetWalkableNeighbors(currentlyExpandedNode);
-            foreach (GridNode neighbor in neighbors)
-            {
-                if (neighbor != null)
+                // Label movement cost of walkable neighbors
+                List<GridNode> neighbors = GetWalkableNeighbors(currentlyExpandedNode);
+                foreach (GridNode neighbor in neighbors)
                 {
-                    Vector3 labelPosition = neighbor.WorldPosition + Vector3.up * 0.5f;
-                    string costText = neighbor.TerrainTypes != null
-                        ? $"{neighbor.TerrainTypes.MovementCost}"
-                        : "NoCost";
-                    Handles.Label(labelPosition, costText);
+                    if (neighbor != null)
+                    {
+                        Vector3 labelPosition = neighbor.WorldPosition + Vector3.up * 0.5f;
+                        string costText = neighbor.TerrainTypes != null
+                            ? $"{neighbor.TerrainTypes.MovementCost}"
+                            : "NoCost";
+                        Handles.Label(labelPosition, costText);
+                    }
                 }
-            }
 #endif
+            }
         }
 
-        // Draw Final Path - Cyan line
-        if (finalPathToGoal != null)
+        if (ShowFinalPathVisualization)
         {
-            Gizmos.color = Color.cyan;
-            for (int i = 0; i < finalPathToGoal.Count - 1; i++)
+            // Cyan spheres and lines for final path
+            if (finalPathToGoal != null)
             {
-                Gizmos.DrawSphere(finalPathToGoal[i].WorldPosition + Vector3.up * 0.3f, 0.15f);
-                Gizmos.DrawLine(finalPathToGoal[i].WorldPosition + Vector3.up * 0.3f,
-                                finalPathToGoal[i + 1].WorldPosition + Vector3.up * 0.3f);
-            }
+                Gizmos.color = Color.cyan;
+                for (int i = 0; i < finalPathToGoal.Count - 1; i++)
+                {
+                    Gizmos.DrawSphere(finalPathToGoal[i].WorldPosition + Vector3.up * 0.3f, 0.15f);
+                    Gizmos.DrawLine(finalPathToGoal[i].WorldPosition + Vector3.up * 0.3f,
+                                    finalPathToGoal[i + 1].WorldPosition + Vector3.up * 0.3f);
+                }
 
-            if (finalPathToGoal.Count > 0)
-                Gizmos.DrawSphere(finalPathToGoal[^1].WorldPosition + Vector3.up * 0.3f, 0.2f);
+                if (finalPathToGoal.Count > 0)
+                    Gizmos.DrawSphere(finalPathToGoal[^1].WorldPosition + Vector3.up * 0.3f, 0.2f);
+            }
         }
     }
 }

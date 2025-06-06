@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30da48dca37aefc40b0dc3173a42e9a4, type: 3}
   m_Name: GridSettings
   m_EditorClassIdentifier: 
-  gridSizeX: 10
-  gridSizeY: 10
+  gridSizeX: 20
+  gridSizeY: 20
   nodeSize: 1
   useXZPlane: 1

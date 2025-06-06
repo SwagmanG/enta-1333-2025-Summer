@@ -9,10 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7679c5cc56f440745a56255a88d56d82, type: 3}
-  m_Name: Grass
+  m_Script: {fileID: 11500000, guid: 95569cbe06cb1bd488af1a7b14d89c33, type: 3}
+  m_Name: UnitType
   m_EditorClassIdentifier: 
-  terrainName: Grass
-  gizmoColor: {r: 0.34901962, g: 0.57254905, b: 0, a: 1}
-  walkable: 1
-  movementCost: 1
+  _width: 1
+  _height: 1
+  _maxHp: 1
+  _moveSpeed: 1
+  _damage: 1
+  _defence: 1
+  _attackType: 0
+  _range: 1
