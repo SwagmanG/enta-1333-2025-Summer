@@ -1,2 +1,12 @@
-# enta-1333-2025-Summer
-Lectures, Labs, and Assignment examples for students to fork and review.
+Open The "GoranFanous RTS Scene"
+found in Assets/1333_RTS/StudentWork/GoranFanous RTS Scene.unity
+
+
+
+
+Controls
+
+left click on grid to make enemy move
+WASD to move camera
+scroll wheel up and down to zoom in and out
+
