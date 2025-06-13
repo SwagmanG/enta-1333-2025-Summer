@@ -5,60 +5,60 @@ using UnityEngine;
 
 public class GridManager : MonoBehaviour
 {
-    // Reference to the grid configuration data
+
     [SerializeField] private GridSettings gridSettings;
 
-    // Default terrain type to use for nodes (can be used if random generation is disabled)
     [SerializeField] private TerrainType defaultTerrainType;
 
-    // List of terrain types used for randomly assigning to nodes
     [SerializeField] private List<TerrainType> terrainTypes;
 
-    // 2D array storing all grid nodes in the world
+    // Toggle to enable or disable random terrain assignment
+    [SerializeField] private bool useRandomTerrain = true;
+
     public GridNode[,] gridNodes;
 
-    // Expose GridSettings as a public property
     public GridSettings GridSettings => gridSettings;
 
-    // Duplicate unused field – consider removing this if not used elsewhere
     private GridNode[,] gridNode;
 
     [Header("Debug for editor playmode only")]
-    // List of all nodes used for debug or visual feedback in the editor
     [SerializeField] private List<GridNode> AllNodes = new();
 
-    // Flag to determine whether the grid has been initialized
     public bool isInitialized { get; private set; } = false;
-
-    // Initializes the grid structure and populates it with nodes
     public void InitializeGrid()
     {
-        // Create the grid array with dimensions from settings
         gridNodes = new GridNode[gridSettings.GridSizeX, gridSettings.GridSizeY];
 
-        // Loop through each grid position
+        // Filter out non-walkable (danger) terrain types if randomization is on
+        List<TerrainType> safeTerrainTypes = terrainTypes.FindAll(t => t.IsWalkable);
+
         for (int x = 0; x < gridSettings.GridSizeX; x++)
         {
             for (int y = 0; y < gridSettings.GridSizeY; y++)
             {
-                // Calculate the world position of the node based on the grid size and plane (XZ or XY)
                 Vector3 worldPos = gridSettings.UseXZPlane
                     ? new Vector3(x, 0, y) * gridSettings.NodeSize
                     : new Vector3(x, y, 0) * gridSettings.NodeSize;
 
-                // Pick a random terrain type for the node from the list
-                TerrainType ChosenTerrain = terrainTypes[Random.Range(0, terrainTypes.Count)];
+                TerrainType chosenTerrain;
 
-                // Create a new grid node and assign properties
+                if (useRandomTerrain && safeTerrainTypes.Count > 0)
+                {
+                    chosenTerrain = safeTerrainTypes[Random.Range(0, safeTerrainTypes.Count)];
+                }
+                else
+                {
+                    chosenTerrain = defaultTerrainType;
+                }
+
                 GridNode node = new GridNode
                 {
                     Name = $"Cell_",
                     WorldPosition = worldPos,
-                    TerrainTypes = ChosenTerrain,
-                    Walkable = ChosenTerrain.IsWalkable,
+                    TerrainTypes = chosenTerrain,
+                    Walkable = chosenTerrain.IsWalkable,
                 };
 
-                // Store the node in the grid array
                 gridNodes[x, y] = node;
             }
         }

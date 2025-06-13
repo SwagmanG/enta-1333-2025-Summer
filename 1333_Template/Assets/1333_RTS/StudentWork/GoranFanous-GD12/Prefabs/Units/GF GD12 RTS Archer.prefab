@@ -14137,6 +14137,7 @@ GameObject:
   - component: {fileID: 9563318}
   - component: {fileID: -690822478607510291}
   - component: {fileID: 1637567315713967849}
+  - component: {fileID: 3523584496437190931}
   m_Layer: 0
   m_Name: GF GD12 RTS Archer
   m_TagString: Player
@@ -14255,7 +14256,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b929bcf92a62274094118c5a0cf63a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 4
   armyType: 0
 --- !u!65 &1637567315713967849
 BoxCollider:
@@ -14278,6 +14278,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 2.09, z: 1}
   m_Center: {x: 0, y: 0.85, z: 0}
+--- !u!114 &3523584496437190931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 179124}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c39e826ce7694f64d9c8ec70f4998cd8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentTarget: {fileID: 408984, guid: b38ee3f463328244087f85131133e0e7, type: 3}
+  pathfinder: {fileID: 0}
 --- !u!1 &179126
 GameObject:
   m_ObjectHideFlags: 0

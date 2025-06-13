@@ -12,3 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b38559b50d27ebc4ab9fb7df8a9ed441, type: 3}
   m_Name: BuildingTypes
   m_EditorClassIdentifier: 
+  Buildings:
+  - BuildingName: Swaglord Manor
+    Icon: {fileID: 0}
+    Cost: 0
+    Width: 0
+    Length: 0
+  - BuildingName: Driplord Monument
+    Icon: {fileID: 0}
+    Cost: 0
+    Width: 0
+    Length: 0

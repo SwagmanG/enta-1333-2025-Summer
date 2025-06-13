@@ -41,13 +41,15 @@ public class UnitSpawner : MonoBehaviour
     // Handle input for spawning and targeting
     private void Update()
     {
-        // Press space to respawn the player unit at a new location
         if (Input.GetKeyDown(KeyCode.Space))
         {
             SpawnPlayerUnit();
         }
 
-        // Left click to attempt spawning an enemy unit and trigger pathfinding
+        // Don't allow enemy spawning or pathing while in build mode
+        if (BuildModeController.Instance.IsInBuildMode)
+            return;
+
         if (Input.GetMouseButtonDown(0))
         {
             TrySpawnEnemyAtClick();
@@ -66,6 +68,7 @@ public class UnitSpawner : MonoBehaviour
         UnitController playerController = currentPlayerUnit.GetComponent<UnitController>();
         playerController.armyType = ArmyType.Player;
         playerController.StopMovement();
+        playerController.SetPathfinder(pathfinder); //  Assign pathfinder
     }
 
     // Handles left mouse click to place an enemy unit and pathfind to it
@@ -78,7 +81,23 @@ public class UnitSpawner : MonoBehaviour
             Vector2Int gridCoords = gridManager.GetGridPosFromWorld(spawnPosition);
             GridNode node = gridManager.GetNode(gridCoords.x, gridCoords.y);
 
-            if (node != null && node.Walkable)
+            if (currentTarget != null)
+                Destroy(currentTarget);
+
+            Vector3 targetPos = node.WorldPosition + Vector3.up * 0.5f;
+            currentTarget = Instantiate(TargetPrefab, targetPos, Quaternion.identity);
+
+            UnitController enemyController = currentTarget.GetComponent<UnitController>();
+            enemyController.armyType = ArmyType.Enemy;
+            enemyController.SetPathfinder(pathfinder); //  Assign pathfinder
+
+            if (currentPlayerUnit != null)
+            {
+                UnitController playerController = currentPlayerUnit.GetComponent<UnitController>();
+                playerController.RequestPath(targetPos); //  Ask player to find path
+            }
+
+            /*if (node != null && node.Walkable)
             {
                 if (currentTarget != null)
                     Destroy(currentTarget);
@@ -91,10 +110,13 @@ public class UnitSpawner : MonoBehaviour
 
                 if (currentPlayerUnit != null)
                 {
-                    UnitController playerController = currentPlayerUnit.GetComponent<UnitController>();
-                    pathfinder.VisualizePath(currentPlayerUnit.transform.position, targetPos, playerController);
+                    UnitAIController playerAI = currentPlayerUnit.GetComponent<UnitAIController>();
+                    if (playerAI != null)
+                    {
+                        playerAI.SetTarget(currentTarget.transform); // tell the unit its new goal
+                    }
                 }
-            }
+            }*/
         }
     }
 
@@ -147,6 +169,8 @@ public class UnitSpawner : MonoBehaviour
 
         return pos;
     }
+
+
 
     // Draws a line in the scene view between the player and enemy units
     private void OnDrawGizmos()
