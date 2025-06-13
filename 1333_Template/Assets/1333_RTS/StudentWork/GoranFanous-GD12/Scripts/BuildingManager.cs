@@ -32,10 +32,9 @@ public class BuildingManager : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, 100f))
         {
-            Vector3 clickPosition = hit.point;
-            Vector2Int gridPos = gridManager.GetGridPosFromWorld(clickPosition);
+            Vector3 clickWorldPosition = hit.point;
+            Vector2Int clickedGridCoords = gridManager.GetGridPosFromWorld(clickWorldPosition);
 
-            // Get building size from prefab
             BuildingType buildingType = buildingPrefab.GetComponent<BuildingType>();
             if (buildingType == null || buildingType.buildingSettings == null)
             {
@@ -43,31 +42,33 @@ public class BuildingManager : MonoBehaviour
                 return;
             }
 
-            int buildWidth = buildingType.buildingSettings.BuildSizeX;
-            int buildHeight = buildingType.buildingSettings.BuildSizeY;
+            int buildingWidth = buildingType.buildingSettings.BuildSizeX;
+            int buildingHeight = buildingType.buildingSettings.BuildSizeY;
             float nodeSize = gridManager.GridSettings.NodeSize;
 
-            // Check if building fits at clicked grid position
-            if (!CanPlaceBuildingAt(gridPos.x, gridPos.y, buildWidth, buildHeight))
+            // Validate placement
+            if (!CanPlaceBuildingAt(clickedGridCoords.x, clickedGridCoords.y, buildingWidth, buildingHeight))
             {
                 Debug.Log("Cannot place building here, space is blocked or out of bounds.");
                 return;
             }
 
-            // Calculate world position centered on the building footprint
-            Vector3 worldPosition = CalculateWorldPosition(gridPos, buildWidth, buildHeight, nodeSize);
+            Vector3 placementWorldPosition = CalculateWorldPosition(
+                clickedGridCoords, buildingWidth, buildingHeight, nodeSize
+            );
 
-            // Instantiate building prefab at calculated world position
-            GameObject building = Instantiate(buildingPrefab, worldPosition, Quaternion.identity);
-            building.transform.localScale = Vector3.one * buildingType.buildingSettings.BuildScale;
+            GameObject newBuilding = Instantiate(buildingPrefab, placementWorldPosition, Quaternion.identity);
+            newBuilding.transform.localScale = Vector3.one * buildingType.buildingSettings.BuildScale;
 
-            // Mark grid nodes as unwalkable
-            for (int dx = 0; dx < buildWidth; dx++)
+            // Mark occupied nodes as unwalkable
+            for (int xOffset = 0; xOffset < buildingWidth; xOffset++)
             {
-                for (int dy = 0; dy < buildHeight; dy++)
+                for (int yOffset = 0; yOffset < buildingHeight; yOffset++)
                 {
-                    Vector2Int nodePos = new Vector2Int(gridPos.x + dx, gridPos.y + dy);
-                    GridNode node = gridManager.GetNode(nodePos.x, nodePos.y);
+                    int nodeX = clickedGridCoords.x + xOffset;
+                    int nodeY = clickedGridCoords.y + yOffset;
+
+                    GridNode node = gridManager.GetNode(nodeX, nodeY);
                     if (node != null)
                     {
                         node.Walkable = false;
@@ -77,13 +78,16 @@ public class BuildingManager : MonoBehaviour
         }
     }
 
-    private bool CanPlaceBuildingAt(int startX, int startY, int sizeX, int sizeY)
+    private bool CanPlaceBuildingAt(int startX, int startY, int width, int height)
     {
-        for (int dx = 0; dx < sizeX; dx++)
+        for (int xOffset = 0; xOffset < width; xOffset++)
         {
-            for (int dy = 0; dy < sizeY; dy++)
+            for (int yOffset = 0; yOffset < height; yOffset++)
             {
-                GridNode node = gridManager.GetNode(startX + dx, startY + dy);
+                int checkX = startX + xOffset;
+                int checkY = startY + yOffset;
+
+                GridNode node = gridManager.GetNode(checkX, checkY);
                 if (node == null || !node.Walkable)
                     return false;
             }
@@ -91,17 +95,17 @@ public class BuildingManager : MonoBehaviour
         return true;
     }
 
-    private Vector3 CalculateWorldPosition(Vector2Int origin, int sizeX, int sizeY, float nodeSize)
+    private Vector3 CalculateWorldPosition(Vector2Int origin, int width, int height, float nodeSize)
     {
-        float offsetX = (sizeX - 1) * 0.5f * nodeSize;
-        float offsetY = (sizeY - 1) * 0.5f * nodeSize;
+        float halfWidthOffset = (width - 1) * 0.5f * nodeSize;
+        float halfHeightOffset = (height - 1) * 0.5f * nodeSize;
 
         Vector3 basePosition = gridManager.GridSettings.UseXZPlane
             ? new Vector3(origin.x, 0f, origin.y) * nodeSize
             : new Vector3(origin.x, origin.y, 0f) * nodeSize;
 
         return gridManager.GridSettings.UseXZPlane
-            ? basePosition + new Vector3(offsetX, 0f, offsetY)
-            : basePosition + new Vector3(offsetX, offsetY, 0f);
+            ? basePosition + new Vector3(halfWidthOffset, 0f, halfHeightOffset)
+            : basePosition + new Vector3(halfWidthOffset, halfHeightOffset, 0f);
     }
 }
