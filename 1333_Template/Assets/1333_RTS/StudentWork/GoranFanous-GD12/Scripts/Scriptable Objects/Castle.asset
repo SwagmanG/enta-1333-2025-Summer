@@ -9,11 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9237c5317ee10d745afb0c65f5c3f2c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 113091e02cb2915419cad60160efe13a, type: 3}
   m_Name: Castle
   m_EditorClassIdentifier: 
   buildingName: Castle
   buildSizeX: 4
   buildSizeY: 4
   buildScale: 1
-  useXZPlane: 0
+  useXZPlane: 1

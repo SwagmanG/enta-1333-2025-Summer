@@ -2,35 +2,39 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Controls the AI-driven movement behavior for a unit.
+/// Responsible for issuing pathfinding requests to the UnitController.
+/// </summary>
 public class UnitAIController : MonoBehaviour
 {
-    public Transform currentTarget;
-    public AstarPathfinding pathfinder; // Optional override to use a shared pathfinder
-    private UnitController unitController;
+    // Reference to the unit's controller component responsible for pathing and movement
+    private UnitController unitMovementController;
 
     private void Awake()
     {
-        unitController = GetComponent<UnitController>();
-        if (pathfinder == null)
-            pathfinder = FindFirstObjectByType<AstarPathfinding>(); // fallback if not assigned
+        // Get the UnitController component attached to the same GameObject
+        unitMovementController = GetComponent<UnitController>();
     }
 
-    public void SetTarget(Transform target)
+    /// <summary>
+    /// Requests movement toward a specific target Transform in the world.
+    /// </summary>
+    /// <param name="targetTransform">The transform the unit should move toward.</param>
+    public void MoveToTarget(Transform targetTransform)
     {
-        currentTarget = target;
-
-        if (pathfinder != null && currentTarget != null)
+        if (targetTransform != null)
         {
-            pathfinder.VisualizePath(transform.position, currentTarget.position, unitController);
+            unitMovementController.RequestPath(targetTransform.position);
         }
     }
 
-    public void MoveToPosition(Vector3 worldPos)
+    /// <summary>
+    /// Requests movement toward a specific world position.
+    /// </summary>
+    /// <param name="destinationWorldPosition">The position the unit should move toward.</param>
+    public void MoveToPosition(Vector3 destinationWorldPosition)
     {
-        if (pathfinder != null)
-        {
-            pathfinder.VisualizePath(transform.position, worldPos, unitController);
-        }
+        unitMovementController.RequestPath(destinationWorldPosition);
     }
 }
-

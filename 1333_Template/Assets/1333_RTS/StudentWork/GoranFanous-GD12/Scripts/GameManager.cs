@@ -6,7 +6,7 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private UnitManager unitManager;
+    
     
     private void Awake()
     {

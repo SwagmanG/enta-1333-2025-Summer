@@ -1,184 +1,82 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using NUnit.Framework.Internal;
 using UnityEngine;
-using UnityEngine.Rendering;
 
+/// <summary>
+/// Handles the spawning of an enemy target unit in the world based on mouse clicks.
+/// Also commands all player units to pathfind toward the new enemy target.
+/// </summary>
 public class UnitSpawner : MonoBehaviour
 {
-    // Prefab for the player-controlled unit
-    public GameObject PlayerUnitPrefab;
+    [Header("Prefab for enemy target")]
+    public GameObject enemyTargetPrefab;
 
-    // Prefab for the enemy or target unit
-    public GameObject TargetPrefab;
-
-    // Reference to the grid system to query positions and nodes
     [SerializeField] private GridManager gridManager;
 
-    // Reference to the A* pathfinding script for route calculation
-    [SerializeField] private AstarPathfinding pathfinder;
-
-    // Instance of the currently spawned player unit
-    private GameObject currentPlayerUnit;
-
-    // Instance of the currently spawned target/enemy
-    private GameObject currentTarget;
-
-    // Flag to track if the player unit is selected (currently unused)
-    private bool playerSelected = false;
-
-    // Reference to the main camera
+    private GameObject currentEnemyTarget;
     private Camera mainCamera;
 
-    // Initialize references and spawn the player unit once at the start
     private void Start()
     {
         mainCamera = Camera.main;
-        SpawnPlayerUnit();
     }
 
-    // Handle input for spawning and targeting
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            SpawnPlayerUnit();
-        }
-
-        // Don't allow enemy spawning or pathing while in build mode
+        // Disable unit spawning while in build mode
         if (BuildModeController.Instance.IsInBuildMode)
             return;
 
+        // Listen for left mouse click
         if (Input.GetMouseButtonDown(0))
         {
-            TrySpawnEnemyAtClick();
+            TrySpawnEnemyAtClickPosition();
         }
     }
 
-    // Spawns a player unit at a valid random walkable grid location
-    private void SpawnPlayerUnit()
+    /// <summary>
+    /// Attempts to spawn an enemy target at the clicked grid location if the node is valid.
+    /// </summary>
+    private void TrySpawnEnemyAtClickPosition()
     {
-        if (currentPlayerUnit != null)
-            Destroy(currentPlayerUnit);
-
-        Vector3 playerPos = GetRandomWalkablePosition() + Vector3.up * 0.5f;
-        currentPlayerUnit = Instantiate(PlayerUnitPrefab, playerPos, Quaternion.identity);
-
-        UnitController playerController = currentPlayerUnit.GetComponent<UnitController>();
-        playerController.armyType = ArmyType.Player;
-        playerController.StopMovement();
-        playerController.SetPathfinder(pathfinder); //  Assign pathfinder
-    }
-
-    // Handles left mouse click to place an enemy unit and pathfind to it
-    private void TrySpawnEnemyAtClick()
-    {
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, 100f))
+        // Cast a ray from the mouse position into the world
+        Ray mouseClickRay = mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(mouseClickRay, out RaycastHit rayHitInfo, 100f))
         {
-            Vector3 spawnPosition = hit.point;
-            Vector2Int gridCoords = gridManager.GetGridPosFromWorld(spawnPosition);
-            GridNode node = gridManager.GetNode(gridCoords.x, gridCoords.y);
+            Vector3 clickedWorldPosition = rayHitInfo.point;
 
-            if (currentTarget != null)
-                Destroy(currentTarget);
+            // Convert world position to grid coordinates
+            Vector2Int clickedGridPosition = gridManager.GetGridPosFromWorld(clickedWorldPosition);
+            GridNode clickedNode = gridManager.GetNode(clickedGridPosition.x, clickedGridPosition.y);
 
-            Vector3 targetPos = node.WorldPosition + Vector3.up * 0.5f;
-            currentTarget = Instantiate(TargetPrefab, targetPos, Quaternion.identity);
+            // Skip if node is invalid, unwalkable, or already occupied
+            if (clickedNode == null || !clickedNode.Walkable || gridManager.IsOccupied(clickedNode))
+                return;
 
-            UnitController enemyController = currentTarget.GetComponent<UnitController>();
-            enemyController.armyType = ArmyType.Enemy;
-            enemyController.SetPathfinder(pathfinder); //  Assign pathfinder
-
-            if (currentPlayerUnit != null)
+            // Remove the previously spawned target and clear its occupied status
+            if (currentEnemyTarget != null)
             {
-                UnitController playerController = currentPlayerUnit.GetComponent<UnitController>();
-                playerController.RequestPath(targetPos); //  Ask player to find path
+                Vector2Int previousTargetGridPosition = gridManager.GetGridPosFromWorld(currentEnemyTarget.transform.position);
+                GridNode previousTargetNode = gridManager.GetNode(previousTargetGridPosition.x, previousTargetGridPosition.y);
+                gridManager.MarkUnoccupied(previousTargetNode, null);
+                Destroy(currentEnemyTarget);
             }
 
-            /*if (node != null && node.Walkable)
+            // Spawn the new enemy target slightly above the grid node position
+            Vector3 spawnPosition = clickedNode.WorldPosition + Vector3.up * 0.5f;
+            currentEnemyTarget = Instantiate(enemyTargetPrefab, spawnPosition, Quaternion.identity);
+
+            // Mark the node as occupied (even though it's just a dummy target)
+            gridManager.MarkOccupied(clickedNode, null);
+
+            // Instruct all player units to pathfind to the new enemy target
+            UnitController[] allUnits = GameObject.FindObjectsByType<UnitController>(FindObjectsSortMode.None);
+            foreach (UnitController unit in allUnits)
             {
-                if (currentTarget != null)
-                    Destroy(currentTarget);
-
-                Vector3 targetPos = node.WorldPosition + Vector3.up * 0.5f;
-                currentTarget = Instantiate(TargetPrefab, targetPos, Quaternion.identity);
-
-                UnitController enemyController = currentTarget.GetComponent<UnitController>();
-                enemyController.armyType = ArmyType.Enemy;
-
-                if (currentPlayerUnit != null)
+                if (unit.armyType == ArmyType.Player)
                 {
-                    UnitAIController playerAI = currentPlayerUnit.GetComponent<UnitAIController>();
-                    if (playerAI != null)
-                    {
-                        playerAI.SetTarget(currentTarget.transform); // tell the unit its new goal
-                    }
+                    unit.RequestPath(currentEnemyTarget.transform.position);
                 }
-            }*/
-        }
-    }
-
-    // Spawns both player and enemy at different random locations and triggers pathfinding
-    private void SpawnUnits()
-    {
-        if (currentPlayerUnit != null)
-            Destroy(currentPlayerUnit);
-        if (currentTarget != null)
-            Destroy(currentTarget);
-
-        Vector3 playerPos = GetRandomWalkablePosition() + Vector3.up * 0.5f;
-        Vector3 targetPos = GetRandomWalkablePosition() + Vector3.up * 0.5f;
-
-        while (targetPos == playerPos)
-        {
-            targetPos = GetRandomWalkablePosition() + Vector3.up * 0.5f;
-        }
-
-        currentPlayerUnit = Instantiate(PlayerUnitPrefab, playerPos, Quaternion.identity);
-        UnitController playerController = currentPlayerUnit.GetComponent<UnitController>();
-        playerController.armyType = ArmyType.Player;
-        playerController.StopMovement();
-
-        currentTarget = Instantiate(TargetPrefab, targetPos, Quaternion.identity);
-        UnitController enemyController = currentTarget.GetComponent<UnitController>();
-        enemyController.armyType = ArmyType.Enemy;
-
-        pathfinder.VisualizePath(playerPos, targetPos, playerController);
-    }
-
-    // Selects a random walkable node from the grid and returns its world position
-    private Vector3 GetRandomWalkablePosition()
-    {
-        GridSettings settings = gridManager.GridSettings;
-        Vector3 pos;
-
-        while (true)
-        {
-            int x = Random.Range(0, settings.GridSizeX);
-            int y = Random.Range(0, settings.GridSizeY);
-            GridNode node = gridManager.GetNode(x, y);
-
-            if (node != null && node.Walkable)
-            {
-                pos = node.WorldPosition;
-                break;
             }
-        }
-
-        return pos;
-    }
-
-
-
-    // Draws a line in the scene view between the player and enemy units
-    private void OnDrawGizmos()
-    {
-        if (currentTarget != null && currentPlayerUnit != null)
-        {
-            Gizmos.color = Color.white;
-            Gizmos.DrawLine(currentPlayerUnit.transform.position, currentTarget.transform.position);
         }
     }
 }

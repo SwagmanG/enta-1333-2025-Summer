@@ -10135,9 +10135,11 @@ GameObject:
   - component: {fileID: 408984}
   - component: {fileID: 9589574}
   - component: {fileID: 2697916785199336824}
+  - component: {fileID: 3778840018290409039}
+  - component: {fileID: -7874876558852245773}
   m_Layer: 0
   m_Name: GF GD12 RTS Peasent
-  m_TagString: Untagged
+  m_TagString: Target
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -10253,8 +10255,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b929bcf92a62274094118c5a0cf63a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 2
   armyType: 1
+--- !u!114 &3778840018290409039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 155500}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c39e826ce7694f64d9c8ec70f4998cd8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-7874876558852245773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 155500}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e01d5c359c089e449da88c54b47c8b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stepDelaySeconds: 0.05
 --- !u!1 &156840
 GameObject:
   m_ObjectHideFlags: 0
