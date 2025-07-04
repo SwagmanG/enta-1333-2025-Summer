@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 113091e02cb2915419cad60160efe13a, type: 3}
+  m_Name: SpawnGate
+  m_EditorClassIdentifier: 
+  buildingName: Default
+  buildSizeX: 1
+  buildSizeY: 1
+  buildScale: 1
+  maxHealth: 1
+  currentHealth: 1

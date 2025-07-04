@@ -10256,6 +10256,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   armyType: 1
+  unitType: {fileID: 11400000, guid: c8cdf516c8c70814a993950391c7f732, type: 2}
+  attackCooldown: 1
 --- !u!114 &3778840018290409039
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10263,7 +10265,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 155500}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c39e826ce7694f64d9c8ec70f4998cd8, type: 3}
   m_Name: 
@@ -10275,7 +10277,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 155500}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5e01d5c359c089e449da88c54b47c8b9, type: 3}
   m_Name: 
