@@ -4,10 +4,21 @@ public class GameManager : MonoBehaviour
 {
     [SerializeField] private GridManager gridManager;
 
+    [Header("Audio Tracks")]
+    [SerializeField] private string startingMusicTrackName = "MenuTheme";
+    [SerializeField] private string startingAmbienceTrackName = "ForestAmbience";
+
     private void Awake()
     {
-        // Initialize the grid once when the game starts
+        // Initialize the grid
         gridManager.InitializeGrid();
+
+        // Start music and ambience
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayMusic(startingMusicTrackName);
+            AudioManager.Instance.PlayAmbience(startingAmbienceTrackName);
+        }
     }
 
     private void Update()

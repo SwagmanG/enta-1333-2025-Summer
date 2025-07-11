@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 public class BuildModeController : MonoBehaviour
 {
     public static BuildModeController Instance { get; private set; }
@@ -27,6 +26,10 @@ public class BuildModeController : MonoBehaviour
         {
             IsInBuildMode = !IsInBuildMode;
             Debug.Log("Build Mode: " + (IsInBuildMode ? "Enabled" : "Disabled"));
+
+            //  Play build mode toggle sound (same for enter and exit)
+            AudioManager.Instance?.PlaySFX("Enter/Exit Buildmode");
+            Debug.LogWarning("buildmode sound");
         }
     }
 }

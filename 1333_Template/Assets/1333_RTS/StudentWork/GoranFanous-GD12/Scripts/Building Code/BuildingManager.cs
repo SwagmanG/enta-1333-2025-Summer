@@ -4,16 +4,13 @@ using UnityEngine;
 public class BuildingManager : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private GridManager gridManager;  // Reference to the grid system managing nodes
+    [SerializeField] private GridManager gridManager;
 
     [Header("Building Prefabs")]
     [Tooltip("List of building prefabs to cycle through")]
     [SerializeField] private List<GameObject> buildingPrefabs;
 
-    // Index of the currently selected building prefab from the list
     private int currentBuildingIndex = 0;
-
-    // Cached reference to the main camera for raycasting mouse clicks
     private Camera mainCamera;
 
     private void Start()
@@ -23,7 +20,6 @@ public class BuildingManager : MonoBehaviour
 
     private void Update()
     {
-        // Only process building placement input if in build mode
         if (!BuildModeController.Instance.IsInBuildMode)
             return;
 
@@ -35,31 +31,35 @@ public class BuildingManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Handles cycling through building prefabs with Q and E keys.
-    /// </summary>
     private void HandleBuildingCycleInput()
     {
         if (buildingPrefabs == null || buildingPrefabs.Count == 0)
             return;
 
+        bool changed = false;
+
         if (Input.GetKeyDown(KeyCode.E))
         {
             currentBuildingIndex++;
             if (currentBuildingIndex >= buildingPrefabs.Count)
-                currentBuildingIndex = 0; // Wrap around to first prefab
+                currentBuildingIndex = 0;
+            changed = true;
         }
         else if (Input.GetKeyDown(KeyCode.Q))
         {
             currentBuildingIndex--;
             if (currentBuildingIndex < 0)
-                currentBuildingIndex = buildingPrefabs.Count - 1; // Wrap around to last prefab
+                currentBuildingIndex = buildingPrefabs.Count - 1;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            AudioManager.Instance?.PlaySFX("Cycle Buildings");
+            Debug.LogWarning("Cycle sound");
         }
     }
 
-    /// <summary>
-    /// Attempts to place the selected building prefab at the mouse click position on the grid.
-    /// </summary>
     private void TryPlaceBuildingAtMouseClick()
     {
         if (buildingPrefabs == null || buildingPrefabs.Count == 0 || gridManager == null)
@@ -69,13 +69,10 @@ public class BuildingManager : MonoBehaviour
         if (buildingPrefab == null)
             return;
 
-        // Raycast from the mouse position into the world to find a placement position
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hitInfo, 100f))
         {
             Vector3 clickedWorldPosition = hitInfo.point;
-
-            // Convert the clicked world position to grid coordinates
             Vector2Int clickedGridCoordinates = gridManager.GetGridPosFromWorld(clickedWorldPosition);
 
             BuildingType buildingTypeComponent = buildingPrefab.GetComponent<BuildingType>();
@@ -85,30 +82,21 @@ public class BuildingManager : MonoBehaviour
                 return;
             }
 
-            // Get the size of the building in grid nodes
             int buildingWidth = buildingTypeComponent.buildingSettings.BuildingSizeX;
             int buildingHeight = buildingTypeComponent.buildingSettings.BuildingSizeY;
-
-            // Size of each grid node in world units
             float gridNodeSize = gridManager.GridSettings.NodeSize;
 
-            // Check if the building can be placed at the target location (not blocked or out of bounds)
             if (!CanPlaceBuildingAt(clickedGridCoordinates.x, clickedGridCoordinates.y, buildingWidth, buildingHeight))
             {
                 Debug.Log("Cannot place building here, space is blocked or out of bounds.");
                 return;
             }
 
-            // Calculate the exact world position to place the building, centered on the grid area it occupies
             Vector3 placementWorldPosition = CalculateWorldPosition(clickedGridCoordinates, buildingWidth, buildingHeight, gridNodeSize);
 
-            // Instantiate the building prefab at the calculated position with no rotation
             GameObject newBuilding = Instantiate(buildingPrefab, placementWorldPosition, Quaternion.identity);
-
-            // Scale the building according to its settings
             newBuilding.transform.localScale = Vector3.one * buildingTypeComponent.buildingSettings.BuildScale;
 
-            // Mark all grid nodes occupied by this building as unwalkable (blocked for pathfinding)
             for (int offsetX = 0; offsetX < buildingWidth; offsetX++)
             {
                 for (int offsetY = 0; offsetY < buildingHeight; offsetY++)
@@ -123,13 +111,13 @@ public class BuildingManager : MonoBehaviour
                     }
                 }
             }
+
+            //  Play 3D sound at building location
+            AudioManager.Instance?.PlaySFXAtPosition("Building Placed", placementWorldPosition);
+            Debug.LogWarning("Building sound");
         }
     }
 
-    /// <summary>
-    /// Checks if the building can be placed at the specified grid origin, given its width and height.
-    /// Returns true if all nodes are walkable and exist.
-    /// </summary>
     private bool CanPlaceBuildingAt(int startX, int startY, int width, int height)
     {
         for (int offsetX = 0; offsetX < width; offsetX++)
@@ -147,10 +135,6 @@ public class BuildingManager : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Calculates the world position for the building placement based on grid origin and building size.
-    /// Takes into account whether the grid uses the XZ plane or XY plane.
-    /// </summary>
     private Vector3 CalculateWorldPosition(Vector2Int gridOrigin, int buildingWidth, int buildingHeight, float nodeSize)
     {
         float halfWidthOffset = (buildingWidth - 1) * 0.5f * nodeSize;
@@ -165,9 +149,6 @@ public class BuildingManager : MonoBehaviour
             : basePosition + new Vector3(halfWidthOffset, halfHeightOffset, 0f);
     }
 
-    /// <summary>
-    /// Displays the name of the currently selected building on the screen during build mode.
-    /// </summary>
     private void OnGUI()
     {
         if (!BuildModeController.Instance.IsInBuildMode)

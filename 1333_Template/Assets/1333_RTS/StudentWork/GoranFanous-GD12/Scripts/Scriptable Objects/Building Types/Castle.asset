@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Castle
   m_EditorClassIdentifier: 
   buildingName: Castle
-  buildSizeX: 4
-  buildSizeY: 4
+  buildingSizeX: 4
+  buildingSizeY: 4
   buildScale: 1
   maxHealth: 125
   currentHealth: 125
