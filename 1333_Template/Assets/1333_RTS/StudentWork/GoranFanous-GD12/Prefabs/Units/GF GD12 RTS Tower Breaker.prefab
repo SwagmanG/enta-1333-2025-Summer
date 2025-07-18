@@ -10138,7 +10138,7 @@ GameObject:
   - component: {fileID: 3778840018290409039}
   - component: {fileID: -7874876558852245773}
   m_Layer: 0
-  m_Name: GF GD12 RTS Peasent
+  m_Name: GF GD12 RTS Tower Breaker
   m_TagString: Target
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

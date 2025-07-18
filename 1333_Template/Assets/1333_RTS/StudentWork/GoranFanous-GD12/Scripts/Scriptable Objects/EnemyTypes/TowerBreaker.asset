@@ -9,12 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 113091e02cb2915419cad60160efe13a, type: 3}
-  m_Name: Castle
+  m_Script: {fileID: 11500000, guid: 0c0ece16dc27bbf4bb55bf145f259993, type: 3}
+  m_Name: TowerBreaker
   m_EditorClassIdentifier: 
-  buildingName: castle
-  buildingSizeX: 4
-  buildingSizeY: 4
-  buildScale: 1
-  maxHealth: 125
-  currentHealth: 125
+  _width: 1
+  _height: 1
+  _maxHp: 100
+  _moveSpeed: 1
+  _damage: 10
+  _defence: 1
+  _attackType: 0
+  _range: 2
+  _attackSpeed: 1

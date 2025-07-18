@@ -3,8 +3,10 @@ using UnityEngine;
 
 public class BuildingManager : MonoBehaviour
 {
+    public static BuildingManager Instance { get; private set; }
+
     [Header("References")]
-    [SerializeField] private GridManager gridManager;
+     public GridManager gridManager;
 
     [Header("Building Prefabs")]
     [Tooltip("List of building prefabs to cycle through")]
@@ -12,6 +14,19 @@ public class BuildingManager : MonoBehaviour
 
     private int currentBuildingIndex = 0;
     private Camera mainCamera;
+
+    // Track placed buildings with their grid positions and sizes to free grid nodes later
+    private readonly List<PlacedBuildingInfo> placedBuildings = new();
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
 
     private void Start()
     {
@@ -97,22 +112,18 @@ public class BuildingManager : MonoBehaviour
             GameObject newBuilding = Instantiate(buildingPrefab, placementWorldPosition, Quaternion.identity);
             newBuilding.transform.localScale = Vector3.one * buildingTypeComponent.buildingSettings.BuildScale;
 
-            for (int offsetX = 0; offsetX < buildingWidth; offsetX++)
+            // Mark grid nodes as occupied
+            MarkGridNodesOccupied(clickedGridCoordinates.x, clickedGridCoordinates.y, buildingWidth, buildingHeight);
+
+            // Register building info for later freeing
+            placedBuildings.Add(new PlacedBuildingInfo
             {
-                for (int offsetY = 0; offsetY < buildingHeight; offsetY++)
-                {
-                    int currentNodeX = clickedGridCoordinates.x + offsetX;
-                    int currentNodeY = clickedGridCoordinates.y + offsetY;
+                Building = newBuilding,
+                BaseGridPosition = clickedGridCoordinates,
+                Width = buildingWidth,
+                Height = buildingHeight
+            });
 
-                    GridNode node = gridManager.GetNode(currentNodeX, currentNodeY);
-                    if (node != null)
-                    {
-                        node.Walkable = false;
-                    }
-                }
-            }
-
-            //  Play 3D sound at building location
             AudioManager.Instance?.PlaySFXAtPosition("Building Placed", placementWorldPosition);
             Debug.LogWarning("Building sound");
         }
@@ -135,6 +146,44 @@ public class BuildingManager : MonoBehaviour
         return true;
     }
 
+    private void MarkGridNodesOccupied(int startX, int startY, int width, int height)
+    {
+        for (int offsetX = 0; offsetX < width; offsetX++)
+        {
+            for (int offsetY = 0; offsetY < height; offsetY++)
+            {
+                int nodeX = startX + offsetX;
+                int nodeY = startY + offsetY;
+
+                GridNode node = gridManager.GetNode(nodeX, nodeY);
+                if (node != null)
+                {
+                    node.Walkable = false;
+                    gridManager.MarkOccupied(node, null);
+                }
+            }
+        }
+    }
+
+    private void MarkGridNodesUnoccupied(int startX, int startY, int width, int height)
+    {
+        for (int offsetX = 0; offsetX < width; offsetX++)
+        {
+            for (int offsetY = 0; offsetY < height; offsetY++)
+            {
+                int nodeX = startX + offsetX;
+                int nodeY = startY + offsetY;
+
+                GridNode node = gridManager.GetNode(nodeX, nodeY);
+                if (node != null)
+                {
+                    node.Walkable = true;
+                    gridManager.MarkUnoccupied(node, null);
+                }
+            }
+        }
+    }
+
     private Vector3 CalculateWorldPosition(Vector2Int gridOrigin, int buildingWidth, int buildingHeight, float nodeSize)
     {
         float halfWidthOffset = (buildingWidth - 1) * 0.5f * nodeSize;
@@ -147,6 +196,30 @@ public class BuildingManager : MonoBehaviour
         return gridManager.GridSettings.UseXZPlane
             ? basePosition + new Vector3(halfWidthOffset, 0f, halfHeightOffset)
             : basePosition + new Vector3(halfWidthOffset, halfHeightOffset, 0f);
+    }
+
+    /// <summary>
+    /// Called by BuildingHealth when building is destroyed.
+    /// Frees grid nodes occupied by that building.
+    /// </summary>
+    /// <param name="buildingHealth">The BuildingHealth component of the destroyed building.</param>
+    public void OnBuildingDestroyed(BuildingHealth buildingHealth)
+    {
+        // Find placed building info
+        PlacedBuildingInfo found = placedBuildings.Find(info => info.Building == buildingHealth.gameObject);
+
+        if (found.Building != null)
+        {
+            // Free grid nodes
+            MarkGridNodesUnoccupied(found.BaseGridPosition.x, found.BaseGridPosition.y, found.Width, found.Height);
+
+            // Remove from list
+            placedBuildings.Remove(found);
+        }
+        else
+        {
+            Debug.LogWarning($"BuildingManager could not find building info for destroyed building {buildingHealth.gameObject.name}");
+        }
     }
 
     private void OnGUI()
@@ -178,5 +251,16 @@ public class BuildingManager : MonoBehaviour
 
         Rect labelRect = new Rect((Screen.width - labelWidth) / 2, 10, labelWidth, labelHeight);
         GUI.Label(labelRect, $"Placing Building: {buildingName}", style);
+    }
+
+    /// <summary>
+    /// Helper class to track placed buildings and their grid footprints.
+    /// </summary>
+    private class PlacedBuildingInfo
+    {
+        public GameObject Building;
+        public Vector2Int BaseGridPosition;
+        public int Width;
+        public int Height;
     }
 }

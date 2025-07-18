@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0c0ece16dc27bbf4bb55bf145f259993, type: 3}
-  m_Name: EnemyUnitType
+  m_Name: CastleBreaker
   m_EditorClassIdentifier: 
   _width: 1
   _height: 1
@@ -18,5 +18,6 @@ MonoBehaviour:
   _moveSpeed: 1
   _damage: 10
   _defence: 1
-  _attackType: 0
+  _attackType: 1
   _range: 2
+  _attackSpeed: 1

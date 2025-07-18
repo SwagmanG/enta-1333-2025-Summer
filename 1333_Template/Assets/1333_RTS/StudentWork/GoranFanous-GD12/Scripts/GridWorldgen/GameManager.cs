@@ -13,11 +13,20 @@ public class GameManager : MonoBehaviour
         // Initialize the grid
         gridManager.InitializeGrid();
 
-        // Start music and ambience
+   
+    }
+
+    private void Start()
+    {
+        // Delay audio playback until Start to ensure AudioManager is fully initialized
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayMusic(startingMusicTrackName);
             AudioManager.Instance.PlayAmbience(startingAmbienceTrackName);
+        }
+        else
+        {
+            Debug.LogWarning("AudioManager.Instance is null in GameManager Start.");
         }
     }
 
