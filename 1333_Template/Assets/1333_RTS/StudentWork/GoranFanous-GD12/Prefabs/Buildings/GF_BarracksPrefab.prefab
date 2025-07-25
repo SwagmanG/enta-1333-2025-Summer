@@ -9,6 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7417885581504172841}
+  - component: {fileID: 5380831836241635325}
+  - component: {fileID: 1372561678301457220}
   m_Layer: 0
   m_Name: GF_BarracksPrefab
   m_TagString: Untagged
@@ -25,13 +27,40 @@ Transform:
   m_GameObject: {fileID: 911860677065042099}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 14.889839, y: 25.31771, z: -22.510406}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.40000004, y: 0.40000004, z: 0.40000004}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 7195245729183623274}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5380831836241635325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 911860677065042099}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b43593f71c72cf45a3093533580fd53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingSettings: {fileID: 11400000, guid: 1273928cd71a0d24bb7daae802e35c6f, type: 2}
+--- !u!114 &1372561678301457220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 911860677065042099}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 613d4d2e9b908ff41ab93c2deaad21fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingSettings: {fileID: 11400000, guid: 1273928cd71a0d24bb7daae802e35c6f, type: 2}
+  armyType: 0
 --- !u!1001 &7195245729183757034
 PrefabInstance:
   m_ObjectHideFlags: 0

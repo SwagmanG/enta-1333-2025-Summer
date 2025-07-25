@@ -9,6 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3794948247505754639}
+  - component: {fileID: 9035816947208435470}
+  - component: {fileID: 2633742960134817703}
   m_Layer: 0
   m_Name: GF_TemplePrefab
   m_TagString: Untagged
@@ -25,13 +27,40 @@ Transform:
   m_GameObject: {fileID: 995085955776545048}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 14.889839, y: 25.31771, z: -22.510406}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2103745526665209201}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9035816947208435470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 995085955776545048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 613d4d2e9b908ff41ab93c2deaad21fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingSettings: {fileID: 11400000, guid: 465e38fa80e51594895920c12cfe1dfa, type: 2}
+  armyType: 0
+--- !u!114 &2633742960134817703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 995085955776545048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b43593f71c72cf45a3093533580fd53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingSettings: {fileID: 11400000, guid: 465e38fa80e51594895920c12cfe1dfa, type: 2}
 --- !u!1001 &2103745526665347057
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -46,15 +75,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 9bf280570cf5dce45a29b84470a52c7e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -14.889839
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 9bf280570cf5dce45a29b84470a52c7e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -25.31771
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 9bf280570cf5dce45a29b84470a52c7e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 22.510406
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 9bf280570cf5dce45a29b84470a52c7e, type: 3}
       propertyPath: m_LocalRotation.w

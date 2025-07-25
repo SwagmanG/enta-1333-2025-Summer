@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Tower
   m_EditorClassIdentifier: 
   buildingName: Tower
-  buildSizeX: 1
-  buildSizeY: 1
-  buildScale: 1
+  buildingSizeX: 1
+  buildingSizeY: 1
+  buildScale: 0.5
   maxHealth: 40
   currentHealth: 40

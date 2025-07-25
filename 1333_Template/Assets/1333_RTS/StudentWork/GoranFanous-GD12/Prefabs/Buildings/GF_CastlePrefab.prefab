@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 839414739482653710}
-  - component: {fileID: 356186255069481485}
   - component: {fileID: 3785995528582059316}
   - component: {fileID: -9622658371953640}
+  - component: {fileID: 7535254470690951934}
   m_Layer: 0
   m_Name: GF_CastlePrefab
   m_TagString: Untagged
@@ -35,19 +35,6 @@ Transform:
   - {fileID: 1820807768058312941}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &356186255069481485
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1563679178007461276}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: acc68bb8dc0bfc749bc02e8266423b47, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerUnitPrefab: {fileID: 179124, guid: 06d8608d67215744da6e5bebe668d06e, type: 3}
 --- !u!114 &3785995528582059316
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75,6 +62,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingSettings: {fileID: 11400000, guid: 76778b038b881e34b82e9545ec1e81c8, type: 2}
   armyType: 0
+--- !u!114 &7535254470690951934
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1563679178007461276}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8023ecd2552b28e44ae5bbe34f6ac6ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  populationInterval: 3
+  populationPerTick: 5
+  baseMaxPopulation: 50
+  populationModifier: 1
 --- !u!1001 &1820807768058438253
 PrefabInstance:
   m_ObjectHideFlags: 0

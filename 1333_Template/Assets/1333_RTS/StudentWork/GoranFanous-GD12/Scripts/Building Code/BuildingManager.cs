@@ -6,17 +6,25 @@ public class BuildingManager : MonoBehaviour
     public static BuildingManager Instance { get; private set; }
 
     [Header("References")]
-     public GridManager gridManager;
+    public GridManager gridManager;
 
     [Header("Building Prefabs")]
-    [Tooltip("List of building prefabs to cycle through")]
     [SerializeField] private List<GameObject> buildingPrefabs;
+
+    [Header("Preview Settings")]
+    [SerializeField] private Material previewValidMaterial;
+    [SerializeField] private Material previewInvalidMaterial;
 
     private int currentBuildingIndex = 0;
     private Camera mainCamera;
+    private GameObject previewBuildingInstance;
+    private int currentRotation = 0;
 
-    // Track placed buildings with their grid positions and sizes to free grid nodes later
     private readonly List<PlacedBuildingInfo> placedBuildings = new();
+    private GameObject placedCastleInstance = null;
+
+    private int totalBarracksPlaced = 0;
+    private int totalTowersPlaced = 0;
 
     private void Awake()
     {
@@ -36,9 +44,14 @@ public class BuildingManager : MonoBehaviour
     private void Update()
     {
         if (!BuildModeController.Instance.IsInBuildMode)
+        {
+            DestroyPreview();
             return;
+        }
 
         HandleBuildingCycleInput();
+        HandleRotationInput();
+        UpdatePreviewBuilding();
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -55,23 +68,105 @@ public class BuildingManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            currentBuildingIndex++;
-            if (currentBuildingIndex >= buildingPrefabs.Count)
-                currentBuildingIndex = 0;
+            currentBuildingIndex = (currentBuildingIndex + 1) % buildingPrefabs.Count;
             changed = true;
         }
         else if (Input.GetKeyDown(KeyCode.Q))
         {
-            currentBuildingIndex--;
-            if (currentBuildingIndex < 0)
-                currentBuildingIndex = buildingPrefabs.Count - 1;
+            currentBuildingIndex = (currentBuildingIndex - 1 + buildingPrefabs.Count) % buildingPrefabs.Count;
             changed = true;
         }
 
         if (changed)
         {
             AudioManager.Instance?.PlaySFX("Cycle Buildings");
-            Debug.LogWarning("Cycle sound");
+            DestroyPreview();
+        }
+    }
+
+    private void HandleRotationInput()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            currentRotation = (currentRotation + 90) % 360;
+            if (previewBuildingInstance != null)
+                previewBuildingInstance.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
+        }
+    }
+
+    private void UpdatePreviewBuilding()
+    {
+        if (buildingPrefabs == null || buildingPrefabs.Count == 0 || gridManager == null)
+            return;
+
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (!Physics.Raycast(ray, out RaycastHit hitInfo, 100f))
+        {
+            DestroyPreview();
+            return;
+        }
+
+        Vector3 worldPos = hitInfo.point;
+        Vector2Int gridPos = gridManager.GetGridPosFromWorld(worldPos);
+
+        GameObject prefab = buildingPrefabs[currentBuildingIndex];
+        if (prefab == null) return;
+
+        BuildingType buildingType = prefab.GetComponent<BuildingType>();
+        if (buildingType == null || buildingType.buildingSettings == null) return;
+
+        string buildingName = buildingType.buildingSettings.BuildingName;
+
+        if (buildingName == "Castle" && placedCastleInstance != null)
+        {
+            DestroyPreview();
+            return;
+        }
+
+        if (buildingName == "Tower" && totalTowersPlaced >= totalBarracksPlaced * 6)
+        {
+            DestroyPreview();
+            return;
+        }
+
+        int width = buildingType.buildingSettings.BuildingSizeX;
+        int height = buildingType.buildingSettings.BuildingSizeY;
+        float nodeSize = gridManager.GridSettings.NodeSize;
+
+        bool rotated = currentRotation % 180 != 0;
+        int finalWidth = rotated ? height : width;
+        int finalHeight = rotated ? width : height;
+
+        Vector3 previewWorldPos = CalculateWorldPosition(gridPos, finalWidth, finalHeight, nodeSize);
+        bool canPlace = CanPlaceBuildingAt(gridPos.x, gridPos.y, finalWidth, finalHeight);
+
+        if (previewBuildingInstance == null)
+        {
+            previewBuildingInstance = Instantiate(prefab, previewWorldPos, Quaternion.Euler(0, currentRotation, 0));
+            previewBuildingInstance.transform.localScale = Vector3.one * buildingType.buildingSettings.BuildScale;
+        }
+
+        previewBuildingInstance.transform.position = previewWorldPos;
+        previewBuildingInstance.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
+        SetPreviewMaterial(previewBuildingInstance, canPlace);
+    }
+
+    private void SetPreviewMaterial(GameObject building, bool canPlace)
+    {
+        Material targetMaterial = canPlace ? previewValidMaterial : previewInvalidMaterial;
+
+        foreach (var renderer in building.GetComponentsInChildren<Renderer>())
+        {
+            renderer.material = targetMaterial;
+        }
+    }
+
+    private void DestroyPreview()
+    {
+        if (previewBuildingInstance != null)
+        {
+            Destroy(previewBuildingInstance);
+            previewBuildingInstance = null;
         }
     }
 
@@ -80,65 +175,94 @@ public class BuildingManager : MonoBehaviour
         if (buildingPrefabs == null || buildingPrefabs.Count == 0 || gridManager == null)
             return;
 
-        GameObject buildingPrefab = buildingPrefabs[currentBuildingIndex];
-        if (buildingPrefab == null)
+        GameObject prefab = buildingPrefabs[currentBuildingIndex];
+        if (prefab == null) return;
+
+        BuildingType buildingType = prefab.GetComponent<BuildingType>();
+        if (buildingType == null || buildingType.buildingSettings == null) return;
+
+        string buildingName = buildingType.buildingSettings.BuildingName;
+        int populationCost = buildingType.buildingSettings.PopulationCost;
+
+        if (ResourceManager.Instance.CurrentPopulation < populationCost)
+        {
+            Debug.LogWarning("Not enough population to place this building.");
             return;
+        }
+
+        if (buildingName == "Castle" && placedCastleInstance != null)
+        {
+            Debug.LogWarning("Only one Castle can exist at a time.");
+            return;
+        }
+
+        if (buildingName == "Tower" && totalTowersPlaced >= totalBarracksPlaced * 6)
+        {
+            Debug.LogWarning("You need to place another Barracks to place more towers.");
+            return;
+        }
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hitInfo, 100f))
+        if (!Physics.Raycast(ray, out RaycastHit hitInfo, 100f))
+            return;
+
+        Vector3 worldPos = hitInfo.point;
+        Vector2Int gridPos = gridManager.GetGridPosFromWorld(worldPos);
+
+        int width = buildingType.buildingSettings.BuildingSizeX;
+        int height = buildingType.buildingSettings.BuildingSizeY;
+        float nodeSize = gridManager.GridSettings.NodeSize;
+
+        bool rotated = currentRotation % 180 != 0;
+        int finalWidth = rotated ? height : width;
+        int finalHeight = rotated ? width : height;
+
+        if (!CanPlaceBuildingAt(gridPos.x, gridPos.y, finalWidth, finalHeight))
         {
-            Vector3 clickedWorldPosition = hitInfo.point;
-            Vector2Int clickedGridCoordinates = gridManager.GetGridPosFromWorld(clickedWorldPosition);
-
-            BuildingType buildingTypeComponent = buildingPrefab.GetComponent<BuildingType>();
-            if (buildingTypeComponent == null || buildingTypeComponent.buildingSettings == null)
-            {
-                Debug.LogError("Building prefab missing BuildingType or BuildingSettings component.");
-                return;
-            }
-
-            int buildingWidth = buildingTypeComponent.buildingSettings.BuildingSizeX;
-            int buildingHeight = buildingTypeComponent.buildingSettings.BuildingSizeY;
-            float gridNodeSize = gridManager.GridSettings.NodeSize;
-
-            if (!CanPlaceBuildingAt(clickedGridCoordinates.x, clickedGridCoordinates.y, buildingWidth, buildingHeight))
-            {
-                Debug.Log("Cannot place building here, space is blocked or out of bounds.");
-                return;
-            }
-
-            Vector3 placementWorldPosition = CalculateWorldPosition(clickedGridCoordinates, buildingWidth, buildingHeight, gridNodeSize);
-
-            GameObject newBuilding = Instantiate(buildingPrefab, placementWorldPosition, Quaternion.identity);
-            newBuilding.transform.localScale = Vector3.one * buildingTypeComponent.buildingSettings.BuildScale;
-
-            // Mark grid nodes as occupied
-            MarkGridNodesOccupied(clickedGridCoordinates.x, clickedGridCoordinates.y, buildingWidth, buildingHeight);
-
-            // Register building info for later freeing
-            placedBuildings.Add(new PlacedBuildingInfo
-            {
-                Building = newBuilding,
-                BaseGridPosition = clickedGridCoordinates,
-                Width = buildingWidth,
-                Height = buildingHeight
-            });
-
-            AudioManager.Instance?.PlaySFXAtPosition("Building Placed", placementWorldPosition);
-            Debug.LogWarning("Building sound");
+            Debug.Log("Cannot place building here.");
+            return;
         }
+
+        Vector3 placeWorldPos = CalculateWorldPosition(gridPos, finalWidth, finalHeight, nodeSize);
+        GameObject newBuilding = Instantiate(prefab, placeWorldPos, Quaternion.Euler(0, currentRotation, 0));
+        newBuilding.transform.localScale = Vector3.one * buildingType.buildingSettings.BuildScale;
+
+        MarkGridNodesOccupied(gridPos.x, gridPos.y, finalWidth, finalHeight);
+
+        placedBuildings.Add(new PlacedBuildingInfo
+        {
+            Building = newBuilding,
+            BaseGridPosition = gridPos,
+            Width = finalWidth,
+            Height = finalHeight
+        });
+
+        if (buildingName == "Castle")
+        {
+            placedCastleInstance = newBuilding;
+        }
+        else if (buildingName == "Barracks")
+        {
+            totalBarracksPlaced++;
+        }
+        else if (buildingName == "Tower")
+        {
+            totalTowersPlaced++;
+        }
+
+        ResourceManager.Instance.SpendPopulation(populationCost);
+
+        AudioManager.Instance?.PlaySFXAtPosition("Building Placed", placeWorldPos);
+        DestroyPreview();
     }
 
     private bool CanPlaceBuildingAt(int startX, int startY, int width, int height)
     {
-        for (int offsetX = 0; offsetX < width; offsetX++)
+        for (int x = 0; x < width; x++)
         {
-            for (int offsetY = 0; offsetY < height; offsetY++)
+            for (int y = 0; y < height; y++)
             {
-                int checkNodeX = startX + offsetX;
-                int checkNodeY = startY + offsetY;
-
-                GridNode node = gridManager.GetNode(checkNodeX, checkNodeY);
+                GridNode node = gridManager.GetNode(startX + x, startY + y);
                 if (node == null || !node.Walkable)
                     return false;
             }
@@ -148,14 +272,11 @@ public class BuildingManager : MonoBehaviour
 
     private void MarkGridNodesOccupied(int startX, int startY, int width, int height)
     {
-        for (int offsetX = 0; offsetX < width; offsetX++)
+        for (int x = 0; x < width; x++)
         {
-            for (int offsetY = 0; offsetY < height; offsetY++)
+            for (int y = 0; y < height; y++)
             {
-                int nodeX = startX + offsetX;
-                int nodeY = startY + offsetY;
-
-                GridNode node = gridManager.GetNode(nodeX, nodeY);
+                GridNode node = gridManager.GetNode(startX + x, startY + y);
                 if (node != null)
                 {
                     node.Walkable = false;
@@ -167,14 +288,11 @@ public class BuildingManager : MonoBehaviour
 
     private void MarkGridNodesUnoccupied(int startX, int startY, int width, int height)
     {
-        for (int offsetX = 0; offsetX < width; offsetX++)
+        for (int x = 0; x < width; x++)
         {
-            for (int offsetY = 0; offsetY < height; offsetY++)
+            for (int y = 0; y < height; y++)
             {
-                int nodeX = startX + offsetX;
-                int nodeY = startY + offsetY;
-
-                GridNode node = gridManager.GetNode(nodeX, nodeY);
+                GridNode node = gridManager.GetNode(startX + x, startY + y);
                 if (node != null)
                 {
                     node.Walkable = true;
@@ -184,41 +302,52 @@ public class BuildingManager : MonoBehaviour
         }
     }
 
-    private Vector3 CalculateWorldPosition(Vector2Int gridOrigin, int buildingWidth, int buildingHeight, float nodeSize)
+    private Vector3 CalculateWorldPosition(Vector2Int gridOrigin, int width, int height, float nodeSize)
     {
-        float halfWidthOffset = (buildingWidth - 1) * 0.5f * nodeSize;
-        float halfHeightOffset = (buildingHeight - 1) * 0.5f * nodeSize;
+        float offsetX = (width - 1) * 0.5f * nodeSize;
+        float offsetY = (height - 1) * 0.5f * nodeSize;
 
-        Vector3 basePosition = gridManager.GridSettings.UseXZPlane
+        Vector3 basePos = gridManager.GridSettings.UseXZPlane
             ? new Vector3(gridOrigin.x, 0f, gridOrigin.y) * nodeSize
             : new Vector3(gridOrigin.x, gridOrigin.y, 0f) * nodeSize;
 
         return gridManager.GridSettings.UseXZPlane
-            ? basePosition + new Vector3(halfWidthOffset, 0f, halfHeightOffset)
-            : basePosition + new Vector3(halfWidthOffset, halfHeightOffset, 0f);
+            ? basePos + new Vector3(offsetX, 0.5f, offsetY)
+            : basePos + new Vector3(offsetX, offsetY, 0.5f);
     }
 
-    /// <summary>
-    /// Called by BuildingHealth when building is destroyed.
-    /// Frees grid nodes occupied by that building.
-    /// </summary>
-    /// <param name="buildingHealth">The BuildingHealth component of the destroyed building.</param>
     public void OnBuildingDestroyed(BuildingHealth buildingHealth)
     {
-        // Find placed building info
-        PlacedBuildingInfo found = placedBuildings.Find(info => info.Building == buildingHealth.gameObject);
-
-        if (found.Building != null)
+        if (buildingHealth == null)
         {
-            // Free grid nodes
-            MarkGridNodesUnoccupied(found.BaseGridPosition.x, found.BaseGridPosition.y, found.Width, found.Height);
+            Debug.LogWarning("BuildingManager: Tried to handle destroyed building but received null reference.");
+            return;
+        }
 
-            // Remove from list
-            placedBuildings.Remove(found);
+        GameObject destroyedGO = buildingHealth.gameObject;
+        int index = placedBuildings.FindIndex(info => info.Building == destroyedGO);
+
+        if (index >= 0)
+        {
+            PlacedBuildingInfo info = placedBuildings[index];
+            MarkGridNodesUnoccupied(info.BaseGridPosition.x, info.BaseGridPosition.y, info.Width, info.Height);
+            placedBuildings.RemoveAt(index);
+
+            BuildingType bt = destroyedGO.GetComponent<BuildingType>();
+            if (bt != null && bt.buildingSettings != null)
+            {
+                string name = bt.buildingSettings.BuildingName;
+                if (name == "Castle")
+                    placedCastleInstance = null;
+                else if (name == "Barracks")
+                    totalBarracksPlaced = Mathf.Max(0, totalBarracksPlaced - 1);
+                else if (name == "Tower")
+                    totalTowersPlaced = Mathf.Max(0, totalTowersPlaced - 1);
+            }
         }
         else
         {
-            Debug.LogWarning($"BuildingManager could not find building info for destroyed building {buildingHealth.gameObject.name}");
+            Debug.LogWarning($"BuildingManager could not find matching building info for destroyed building {destroyedGO.name}");
         }
     }
 
@@ -234,10 +363,9 @@ public class BuildingManager : MonoBehaviour
         if (currentPrefab == null)
             return;
 
-        BuildingType buildingTypeComponent = currentPrefab.GetComponent<BuildingType>();
-        string buildingName = buildingTypeComponent != null && buildingTypeComponent.buildingSettings != null
-            ? buildingTypeComponent.buildingSettings.BuildingName
-            : "Unknown";
+        BuildingType buildingType = currentPrefab.GetComponent<BuildingType>();
+        string name = buildingType?.buildingSettings?.BuildingName ?? "Unknown";
+        int populationCost = buildingType?.buildingSettings?.PopulationCost ?? 0;
 
         GUIStyle style = new GUIStyle(GUI.skin.label)
         {
@@ -246,16 +374,16 @@ public class BuildingManager : MonoBehaviour
             alignment = TextAnchor.UpperCenter
         };
 
-        float labelWidth = 300f;
-        float labelHeight = 30f;
+        float width = 400f;
+        float height = 30f;
 
-        Rect labelRect = new Rect((Screen.width - labelWidth) / 2, 10, labelWidth, labelHeight);
-        GUI.Label(labelRect, $"Placing Building: {buildingName}", style);
+        Rect rect1 = new Rect((Screen.width - width) / 2, 10, width, height);
+        Rect rect2 = new Rect((Screen.width - width) / 2, 45, width, height);
+
+        GUI.Label(rect1, $"Placing: {name} (R to rotate)", style);
+        GUI.Label(rect2, $"Population Cost: {populationCost}", style);
     }
 
-    /// <summary>
-    /// Helper class to track placed buildings and their grid footprints.
-    /// </summary>
     private class PlacedBuildingInfo
     {
         public GameObject Building;

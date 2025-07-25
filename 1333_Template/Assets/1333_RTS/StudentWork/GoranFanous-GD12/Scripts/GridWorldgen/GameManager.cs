@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -8,12 +9,12 @@ public class GameManager : MonoBehaviour
     [SerializeField] private string startingMusicTrackName = "MenuTheme";
     [SerializeField] private string startingAmbienceTrackName = "ForestAmbience";
 
+    
+
     private void Awake()
     {
         // Initialize the grid
         gridManager.InitializeGrid();
-
-   
     }
 
     private void Start()
@@ -32,10 +33,12 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        // Press R to reinitialize the grid at runtime
-        if (Input.GetKeyDown(KeyCode.R))
+       
+
+        // Press Escape to return to Main Menu
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            gridManager.InitializeGrid();
+            SceneManager.LoadScene(0);
         }
     }
 }

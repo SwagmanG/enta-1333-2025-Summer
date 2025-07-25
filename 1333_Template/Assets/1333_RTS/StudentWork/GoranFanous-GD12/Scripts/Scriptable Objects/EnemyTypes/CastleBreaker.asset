@@ -19,5 +19,5 @@ MonoBehaviour:
   _damage: 10
   _defence: 1
   _attackType: 1
-  _range: 2
+  _range: 3
   _attackSpeed: 1

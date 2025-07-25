@@ -8,25 +8,19 @@ using UnityEngine;
 public class GridManager : MonoBehaviour
 {
     [Header("Grid Configuration")]
-    // Settings describing grid size, node size, and plane orientation
     [SerializeField] private GridSettings gridSettings;
-    // Default terrain type to assign if random terrain is disabled or unavailable
     [SerializeField] private TerrainType defaultTerrainType;
-    // List of possible terrain types to randomly assign
     [SerializeField] private List<TerrainType> terrainTypes;
-    // Flag indicating whether to assign terrain randomly on grid initialization
     [SerializeField] private bool useRandomTerrain = true;
 
-    // 2D array holding all nodes in the grid
+    [Header("Grid Visualization")]
+    [SerializeField] private GameObject gridCubePrefab; // <-- New: Assign a cube prefab with collider
+
     public GridNode[,] gridNodes;
-    // Property exposing grid settings publicly
     public GridSettings GridSettings => gridSettings;
 
-    // Dictionary tracking which nodes are occupied by which units
     private Dictionary<GridNode, UnitController> occupiedNodes = new();
-    // Dictionary tracking nodes reserved by units for movement planning
     private Dictionary<GridNode, UnitController> reservedNodes = new();
-    // Dictionary to keep original terrain types to restore when unoccupied
     private Dictionary<GridNode, TerrainType> originalTerrainTypes = new();
 
     /// <summary>
@@ -37,24 +31,20 @@ public class GridManager : MonoBehaviour
         gridNodes = new GridNode[gridSettings.GridSizeX, gridSettings.GridSizeY];
         originalTerrainTypes.Clear();
 
-        // Filter only walkable terrain types for random assignment
         List<TerrainType> walkableTerrains = terrainTypes.FindAll(t => t.IsWalkable);
 
         for (int x = 0; x < gridSettings.GridSizeX; x++)
         {
             for (int y = 0; y < gridSettings.GridSizeY; y++)
             {
-                // Calculate world position of the node based on grid layout
                 Vector3 worldPosition = gridSettings.UseXZPlane
                     ? new Vector3(x, 0, y) * gridSettings.NodeSize
                     : new Vector3(x, y, 0) * gridSettings.NodeSize;
 
-                // Select terrain either randomly from walkable types or use default
                 TerrainType selectedTerrain = (useRandomTerrain && walkableTerrains.Count > 0)
                     ? walkableTerrains[Random.Range(0, walkableTerrains.Count)]
                     : defaultTerrainType;
 
-                // Create and initialize new grid node with name, position, terrain and walkability
                 GridNode node = new GridNode
                 {
                     Name = $"Cell_{x}_{y}",
@@ -63,23 +53,37 @@ public class GridManager : MonoBehaviour
                     Walkable = selectedTerrain.IsWalkable
                 };
 
-                // Assign node to grid and store original terrain for restoration
                 gridNodes[x, y] = node;
                 originalTerrainTypes[node] = selectedTerrain;
+
+                // --- NEW: Spawn a visible cube mesh for this node ---
+                if (gridCubePrefab != null)
+                {
+                    GameObject cube = Instantiate(gridCubePrefab, worldPosition, Quaternion.identity, transform);
+                    cube.name = node.Name;
+
+                    // Resize based on node size
+                    //cube.transform.localScale = Vector3.one * gridSettings.NodeSize * 0.9f;
+
+                    // Optional: apply terrain color
+                    if (cube.TryGetComponent<Renderer>(out var renderer))
+                    {
+                        Color color = selectedTerrain.GizmoColor;
+                        float alpha = Mathf.InverseLerp(10f, 1f, selectedTerrain.MovementCost);
+                        color.a = Mathf.Clamp01(alpha);
+
+                        renderer.material.color = color;
+                    }
+                }
             }
         }
 
-        // Clear any existing occupation or reservation data
         occupiedNodes.Clear();
         reservedNodes.Clear();
     }
 
-    /// <summary>
-    /// Returns the grid node at the given coordinates, or null if out of bounds.
-    /// </summary>
-    /// <param name="x">Grid X coordinate.</param>
-    /// <param name="y">Grid Y coordinate.</param>
-    /// <returns>The node at (x,y) or null if invalid position.</returns>
+    // --- Everything below remains unchanged ---
+
     public GridNode GetNode(int x, int y)
     {
         if (x >= 0 && x < gridSettings.GridSizeX && y >= 0 && y < gridSettings.GridSizeY)
@@ -87,11 +91,6 @@ public class GridManager : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// Converts a world position into grid coordinates.
-    /// </summary>
-    /// <param name="worldPosition">World position in game space.</param>
-    /// <returns>Corresponding grid coordinates as Vector2Int.</returns>
     public Vector2Int GetGridPosFromWorld(Vector3 worldPosition)
     {
         int x = Mathf.RoundToInt(worldPosition.x / gridSettings.NodeSize);
@@ -102,31 +101,15 @@ public class GridManager : MonoBehaviour
         return new Vector2Int(x, y);
     }
 
-    /// <summary>
-    /// Checks if the given node is currently occupied by a unit.
-    /// </summary>
     public bool IsOccupied(GridNode node) => occupiedNodes.ContainsKey(node);
-
-    /// <summary>
-    /// Checks if the given node is currently reserved by a unit.
-    /// </summary>
     public bool IsReserved(GridNode node) => reservedNodes.ContainsKey(node);
 
-    /// <summary>
-    /// Checks if the node is occupied or reserved by any unit other than the specified one.
-    /// </summary>
-    /// <param name="node">Grid node to check.</param>
-    /// <param name="unit">Unit to exclude from check.</param>
-    /// <returns>True if node is occupied or reserved by another unit.</returns>
     public bool IsOccupiedOrReservedByOther(GridNode node, UnitController unit)
     {
         return (occupiedNodes.TryGetValue(node, out var occupier) && occupier != unit)
             || (reservedNodes.TryGetValue(node, out var reserver) && reserver != unit);
     }
 
-    /// <summary>
-    /// Marks a node as occupied by a given unit, removing any reservation by that unit.
-    /// </summary>
     public void MarkOccupied(GridNode node, UnitController unit)
     {
         if (node == null) return;
@@ -137,13 +120,10 @@ public class GridManager : MonoBehaviour
         if (!occupiedNodes.ContainsKey(node))
         {
             occupiedNodes[node] = unit;
-            node.TerrainTypes = null; // Optionally override terrain for visuals
+            node.TerrainTypes = null;
         }
     }
 
-    /// <summary>
-    /// Marks a node as unoccupied by a given unit and restores original terrain.
-    /// </summary>
     public void MarkUnoccupied(GridNode node, UnitController unit)
     {
         if (node == null) return;
@@ -156,9 +136,6 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Attempts to reserve a node for a unit, returns false if already occupied or reserved by others.
-    /// </summary>
     public bool TryReserveNode(GridNode node, UnitController unit)
     {
         if (node == null || IsOccupiedOrReservedByOther(node, unit)) return false;
@@ -167,158 +144,108 @@ public class GridManager : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Releases a reservation on a node held by a unit.
-    /// </summary>
     public void ReleaseReservation(GridNode node, UnitController unit)
     {
         if (node != null && reservedNodes.TryGetValue(node, out var reserver) && reserver == unit)
             reservedNodes.Remove(node);
     }
 
-    /// <summary>
-    /// Returns a list of walkable, unoccupied neighbors (up, down, left, right) for pathfinding.
-    /// </summary>
-    /// <param name="node">Center node.</param>
-    /// <param name="requestingUnit">Unit requesting neighbors to exclude reservations/occupations by others.</param>
     public List<GridNode> GetWalkableNeighbors(GridNode node, UnitController requestingUnit)
     {
         List<GridNode> neighbors = new();
-
-        // Get current grid coordinates of the node
         Vector2Int gridPosition = GetGridPosFromWorld(node.WorldPosition);
 
-        // Directions to check: Up, Right, Down, Left (no diagonals)
         int[,] directions = new int[,] {
-            { 0, 1 },   // Up
-            { 1, 0 },   // Right
-            { 0, -1 },  // Down
-            { -1, 0 }   // Left
+            { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 }
         };
 
-        // Loop through each direction and check neighbor nodes
-        for (int directionIndex = 0; directionIndex < directions.GetLength(0); directionIndex++)
+        for (int i = 0; i < directions.GetLength(0); i++)
         {
-            int neighborX = gridPosition.x + directions[directionIndex, 0];
-            int neighborY = gridPosition.y + directions[directionIndex, 1];
+            int nx = gridPosition.x + directions[i, 0];
+            int ny = gridPosition.y + directions[i, 1];
 
-            GridNode neighborNode = GetNode(neighborX, neighborY);
-            if (neighborNode != null && neighborNode.Walkable && !IsOccupiedOrReservedByOther(neighborNode, requestingUnit))
-                neighbors.Add(neighborNode);
+            GridNode neighbor = GetNode(nx, ny);
+            if (neighbor != null && neighbor.Walkable && !IsOccupiedOrReservedByOther(neighbor, requestingUnit))
+                neighbors.Add(neighbor);
         }
 
         return neighbors;
     }
 
-    /// <summary>
-    /// Searches outward in layers around a center node to find available walkable and unoccupied nodes.
-    /// </summary>
-    /// <param name="centerNode">Node around which to search.</param>
-    /// <param name="layerDepth">Maximum number of layers to search outward.</param>
     public List<GridNode> GetSurroundingAvailableNodes(GridNode centerNode, int layerDepth = 2)
     {
         List<GridNode> availableNodes = new();
-        Vector2Int centerPosition = GetGridPosFromWorld(centerNode.WorldPosition);
+        Vector2Int center = GetGridPosFromWorld(centerNode.WorldPosition);
 
-        // Iterate through layers expanding outward from center node
-        for (int radius = 1; radius <= layerDepth; radius++)
+        for (int r = 1; r <= layerDepth; r++)
         {
-            for (int offsetX = -radius; offsetX <= radius; offsetX++)
+            for (int dx = -r; dx <= r; dx++)
             {
-                for (int offsetY = -radius; offsetY <= radius; offsetY++)
+                for (int dy = -r; dy <= r; dy++)
                 {
-                    // Only consider nodes exactly on the current radius ring (edges of square)
-                    bool isOnRingEdge = Mathf.Abs(offsetX) == radius || Mathf.Abs(offsetY) == radius;
+                    if ((Mathf.Abs(dx) != r && Mathf.Abs(dy) != r) || (dx == 0 && dy == 0)) continue;
 
-                    if (!isOnRingEdge || (offsetX == 0 && offsetY == 0))
-                        continue;
+                    int tx = center.x + dx;
+                    int ty = center.y + dy;
 
-                    int targetX = centerPosition.x + offsetX;
-                    int targetY = centerPosition.y + offsetY;
-
-                    GridNode candidateNode = GetNode(targetX, targetY);
-                    if (candidateNode != null && candidateNode.Walkable && !IsOccupied(candidateNode) && !IsReserved(candidateNode))
-                        availableNodes.Add(candidateNode);
+                    GridNode node = GetNode(tx, ty);
+                    if (node != null && node.Walkable && !IsOccupied(node) && !IsReserved(node))
+                        availableNodes.Add(node);
                 }
             }
 
-            if (availableNodes.Count > 0)
-                break; // Stop if we found any available nodes at this radius
+            if (availableNodes.Count > 0) break;
         }
 
         return availableNodes;
     }
 
-    /// <summary>
-    /// Checks if the given unit is physically alone inside the specified grid node using collider overlap.
-    /// </summary>
     private bool IsUnitAloneInNode(UnitController unit, GridNode node)
     {
         if (unit == null || node == null) return false;
 
-        BoxCollider unitCollider = unit.GetComponent<BoxCollider>();
-        if (unitCollider == null)
+        BoxCollider unitCol = unit.GetComponent<BoxCollider>();
+        if (unitCol == null) return true;
+
+        Vector3 center = unitCol.bounds.center;
+        Vector3 halfExtents = unitCol.bounds.extents;
+
+        Collider[] overlaps = Physics.OverlapBox(center, halfExtents, unit.transform.rotation);
+        foreach (var col in overlaps)
         {
-            Debug.LogWarning("Unit missing BoxCollider component.");
-            return true; // Assume alone if no collider
+            if (col.gameObject == unit.gameObject) continue;
+            if (col.TryGetComponent<UnitController>(out var other) &&
+                GetNodeFromWorld(other.transform.position) == node)
+                return false;
         }
 
-        Vector3 colliderCenter = unitCollider.bounds.center;
-        Vector3 colliderHalfExtents = unitCollider.bounds.extents;
-
-        // Check all colliders overlapping with the unit's collider
-        Collider[] overlappingColliders = Physics.OverlapBox(colliderCenter, colliderHalfExtents, unit.transform.rotation);
-        foreach (Collider collider in overlappingColliders)
-        {
-            if (collider.gameObject == unit.gameObject)
-                continue; // Ignore self
-
-            if (collider.TryGetComponent<UnitController>(out UnitController otherUnit))
-            {
-                GridNode otherUnitNode = GetNodeFromWorld(otherUnit.transform.position);
-                if (otherUnitNode == node)
-                    return false; // Found another unit in the same node
-            }
-        }
-
-        return true; // No other units in the node
+        return true;
     }
 
-    /// <summary>
-    /// Ensures that the given unit occupies a node that is physically and logically its own.
-    /// If the current node is occupied by another unit, attempts to move the unit to a free neighbor.
-    /// </summary>
     public void EnsureUnitOccupiesOwnNode(UnitController unit)
     {
-        GridNode currentNode = GetNodeFromWorld(unit.transform.position);
-        if (currentNode == null) return;
+        GridNode node = GetNodeFromWorld(unit.transform.position);
+        if (node == null) return;
 
-        if (occupiedNodes.TryGetValue(currentNode, out var occupier))
+        if (occupiedNodes.TryGetValue(node, out var occupier))
         {
-            // Node occupied by another unit, attempt to find free neighbor node
             if (occupier != unit)
             {
-                List<GridNode> neighbors = GetWalkableNeighbors(currentNode, unit);
+                var neighbors = GetWalkableNeighbors(node, unit);
                 if (neighbors.Count > 0)
                 {
-                    GridNode targetNode = neighbors[Random.Range(0, neighbors.Count)];
-                    if (TryReserveNode(targetNode, unit))
-                    {
-                        unit.RequestPath(targetNode.WorldPosition);
-                    }
+                    var target = neighbors[Random.Range(0, neighbors.Count)];
+                    if (TryReserveNode(target, unit))
+                        unit.RequestPath(target.WorldPosition);
                 }
             }
         }
-        else if (IsUnitAloneInNode(unit, currentNode))
+        else if (IsUnitAloneInNode(unit, node))
         {
-            // Occupy the current node if alone
-            MarkOccupied(currentNode, unit);
+            MarkOccupied(node, unit);
         }
     }
 
-    /// <summary>
-    /// Attempts to reserve the target node and request a path for the unit.
-    /// </summary>
     public bool RequestMoveToNode(UnitController unit, GridNode targetNode)
     {
         if (TryReserveNode(targetNode, unit))
@@ -330,35 +257,23 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Cancels all reservations made by the given unit.
-    /// </summary>
     public void CancelReservation(UnitController unit)
     {
-        List<GridNode> nodesToRemove = new();
-
+        List<GridNode> toRemove = new();
         foreach (var kvp in reservedNodes)
-        {
-            if (kvp.Value == unit)
-                nodesToRemove.Add(kvp.Key);
-        }
+            if (kvp.Value == unit) toRemove.Add(kvp.Key);
 
-        foreach (var node in nodesToRemove)
-        {
+        foreach (var node in toRemove)
             reservedNodes.Remove(node);
-        }
     }
 
-    /// <summary>
-    /// Checks for collisions with other units and attempts to resolve by reoccupying correct nodes.
-    /// </summary>
     public void CheckAndResolveCollisions(UnitController unit)
     {
-        Collider[] nearbyColliders = Physics.OverlapSphere(unit.transform.position, 0.1f);
-        foreach (Collider collider in nearbyColliders)
+        Collider[] nearby = Physics.OverlapSphere(unit.transform.position, 0.1f);
+        foreach (var col in nearby)
         {
-            if (collider.gameObject != unit.gameObject &&
-                collider.TryGetComponent<UnitController>(out var otherUnit))
+            if (col.gameObject != unit.gameObject &&
+                col.TryGetComponent<UnitController>(out var other))
             {
                 EnsureUnitOccupiesOwnNode(unit);
                 return;
@@ -368,18 +283,12 @@ public class GridManager : MonoBehaviour
         EnsureUnitOccupiesOwnNode(unit);
     }
 
-    /// <summary>
-    /// Gets the grid node corresponding to the given world position.
-    /// </summary>
     public GridNode GetNodeFromWorld(Vector3 worldPosition)
     {
-        Vector2Int gridCoordinates = GetGridPosFromWorld(worldPosition);
-        return GetNode(gridCoordinates.x, gridCoordinates.y);
+        Vector2Int coords = GetGridPosFromWorld(worldPosition);
+        return GetNode(coords.x, coords.y);
     }
 
-    /// <summary>
-    /// Draws the grid nodes in the editor using Gizmos, showing walkability, occupation, reservation, and terrain cost.
-    /// </summary>
     private void OnDrawGizmos()
     {
         if (gridNodes == null || gridSettings == null) return;
@@ -393,12 +302,9 @@ public class GridManager : MonoBehaviour
 
                 Color color;
 
-                if (!node.Walkable)
-                    color = Color.red; // Impassable nodes in red
-                else if (IsOccupied(node))
-                    color = Color.blue; // Occupied nodes in blue
-                else if (IsReserved(node))
-                    color = Color.cyan; // Reserved nodes in cyan
+                if (!node.Walkable) color = Color.red;
+                else if (IsOccupied(node)) color = Color.blue;
+                else if (IsReserved(node)) color = Color.cyan;
                 else
                 {
                     TerrainType terrain = node.TerrainTypes ?? defaultTerrainType;

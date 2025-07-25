@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 113091e02cb2915419cad60160efe13a, type: 3}
-  m_Name: Gate Placeable
+  m_Name: Farm
   m_EditorClassIdentifier: 
-  buildingName: Default
-  buildSizeX: 1
-  buildSizeY: 1
-  buildScale: 1
-  maxHealth: 1
-  currentHealth: 1
+  buildingName: Farm
+  buildingSizeX: 4
+  buildingSizeY: 4
+  buildScale: 0.6
+  maxHealth: 20
+  currentHealth: 20

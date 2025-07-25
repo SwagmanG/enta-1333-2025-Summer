@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Barracks
   m_EditorClassIdentifier: 
   buildingName: Barracks
-  buildSizeX: 4
-  buildSizeY: 4
-  buildScale: 1
+  buildingSizeX: 3
+  buildingSizeY: 3
+  buildScale: 0.4
   maxHealth: 105
   currentHealth: 105

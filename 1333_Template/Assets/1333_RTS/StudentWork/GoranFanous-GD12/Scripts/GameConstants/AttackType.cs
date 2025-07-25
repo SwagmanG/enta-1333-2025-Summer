@@ -6,5 +6,6 @@ namespace RTS_1333
         TowerBreaker = 0,
         CastleBreaker = 1,
         FoodBreaker = 2,
+        HappyBreaker = 3,
     }
 }

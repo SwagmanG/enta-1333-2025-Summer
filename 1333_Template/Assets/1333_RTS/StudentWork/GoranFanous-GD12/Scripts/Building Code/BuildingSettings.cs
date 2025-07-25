@@ -41,4 +41,6 @@ public class BuildingSettings : ScriptableObject
 
     // Public getter for the current health value
     public int CurrentHealth => currentHealth;
+
+    public int PopulationCost = 1;
 }

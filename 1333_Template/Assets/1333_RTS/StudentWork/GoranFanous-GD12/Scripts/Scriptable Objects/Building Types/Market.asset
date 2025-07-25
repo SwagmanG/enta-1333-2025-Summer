@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 113091e02cb2915419cad60160efe13a, type: 3}
-  m_Name: House
+  m_Name: Market
   m_EditorClassIdentifier: 
-  buildingName: House
-  buildSizeX: 2
-  buildSizeY: 2
-  buildScale: 1
-  maxHealth: 50
-  currentHealth: 50
+  buildingName: Market
+  buildingSizeX: 3
+  buildingSizeY: 3
+  buildScale: 0.5
+  maxHealth: 40
+  currentHealth: 40

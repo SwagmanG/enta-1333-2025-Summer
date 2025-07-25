@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Library
   m_EditorClassIdentifier: 
   buildingName: Library
-  buildSizeX: 4
-  buildSizeY: 4
-  buildScale: 1
+  buildingSizeX: 3
+  buildingSizeY: 3
+  buildScale: 0.5
   maxHealth: 90
   currentHealth: 90

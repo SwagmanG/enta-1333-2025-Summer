@@ -21,7 +21,7 @@ public class AstarPathfinding : MonoBehaviour
         // Implement singleton pattern
         if (Instance != null && Instance != this)
         {
-            Destroy(this);
+  
             return;
         }
 

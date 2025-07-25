@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using RTS_1333;
+using Unity.Profiling.LowLevel;
 
 public class UnitController : MonoBehaviour
 {
@@ -80,12 +81,18 @@ public class UnitController : MonoBehaviour
 
                     if (unitType.AttackType == AttackType.CastleBreaker)
                     {
-                        if (!(nameLower.Contains("castle") || nameLower.Contains("keep") || nameLower.Contains("fortress")))
+                        if (!(nameLower.Contains("castle") || nameLower.Contains("barracks")))
+                            continue;
+                    }
+
+                    if (unitType.AttackType == AttackType.HappyBreaker)
+                    {
+                        if (!(nameLower.Contains("temple") || nameLower.Contains("library") || nameLower.Contains("market")))
                             continue;
                     }
 
                     if (unitType.AttackType == AttackType.FoodBreaker &&
-                        !(nameLower.Contains("farm") || nameLower.Contains("mill") || nameLower.Contains("granary")))
+                        !(nameLower.Contains("farm") || nameLower.Contains("granary")))
                         continue;
 
                     float distance = Vector3.Distance(transform.position, structure.transform.position);

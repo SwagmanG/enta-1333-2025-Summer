@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using RTS_1333; // Assuming UnitType and AttackType are defined in this namespace
 
 /// <summary>
 /// Controls tower behavior, including scanning for nearby enemy units within a radius,
@@ -50,63 +51,64 @@ public class TowerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Finds the closest enemy unit within the tower's attack range.
+    /// Finds the closest enemy unit within the tower's attack range, prioritizing TowerBreakers.
     /// </summary>
     /// <returns>The nearest enemy UnitController, or null if none in range.</returns>
     private UnitController FindNearestEnemyInRange()
     {
         UnitController[] allUnits = GameObject.FindObjectsByType<UnitController>(FindObjectsSortMode.None);
+        UnitController nearestTowerBreaker = null;
         UnitController nearestEnemy = null;
-        float closestDistance = float.MaxValue;
+        float closestBreakerDistance = float.MaxValue;
+        float closestEnemyDistance = float.MaxValue;
 
-        // Iterate through all units and find the closest enemy within attack range
         foreach (UnitController unit in allUnits)
         {
-            // Skip if not an enemy unit
             if (unit.armyType != ArmyType.Enemy)
                 continue;
 
-            // Calculate distance from this tower to the unit
             float distanceToUnit = Vector3.Distance(transform.position, unit.transform.position);
+            if (distanceToUnit > attackRange)
+                continue;
 
-            // Check if this unit is closer than the previously recorded closest and inside attack range
-            if (distanceToUnit <= attackRange && distanceToUnit < closestDistance)
+            // Check if it's a TowerBreaker
+            if (unit.unitType.AttackType == AttackType.TowerBreaker && distanceToUnit < closestBreakerDistance)
+            {
+                nearestTowerBreaker = unit;
+                closestBreakerDistance = distanceToUnit;
+            }
+
+            // Track any closest enemy
+            if (distanceToUnit < closestEnemyDistance)
             {
                 nearestEnemy = unit;
-                closestDistance = distanceToUnit;
+                closestEnemyDistance = distanceToUnit;
             }
         }
 
-        return nearestEnemy;
+        // Prioritize TowerBreaker if one is in range
+        return nearestTowerBreaker != null ? nearestTowerBreaker : nearestEnemy;
     }
 
     /// <summary>
     /// Checks if the specified unit is still a valid attack target (exists, alive, and in range).
     /// </summary>
-    /// <param name="unit">The unit to validate.</param>
-    /// <returns>True if valid target; otherwise false.</returns>
     private bool IsValidTarget(UnitController unit)
     {
         if (unit == null) return false;
 
         float distanceToUnit = Vector3.Distance(transform.position, unit.transform.position);
-
-        // Valid if within attack range and is an enemy unit
         return distanceToUnit <= attackRange && unit.armyType == ArmyType.Enemy;
     }
 
     /// <summary>
     /// Applies damage to the targeted enemy unit and draws a debug line to show the attack.
     /// </summary>
-    /// <param name="enemy">The enemy unit to attack.</param>
     private void AttackTarget(UnitController enemy)
     {
         if (enemy == null) return;
 
-        // Inflict damage on the enemy
         enemy.TakeDamage(damagePerShot);
-
-        // Draw a red line in the Scene view for visualizing the attack
         Debug.DrawLine(transform.position + Vector3.up * 1f, enemy.transform.position + Vector3.up * 1f, Color.red, 0.2f);
     }
 
@@ -115,11 +117,9 @@ public class TowerController : MonoBehaviour
     /// </summary>
     private void OnDrawGizmosSelected()
     {
-        // Draw yellow wire sphere representing the attack radius
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, attackRange);
 
-        // Draw a red line to the current target if one exists
         if (currentTarget != null)
         {
             Gizmos.color = Color.red;

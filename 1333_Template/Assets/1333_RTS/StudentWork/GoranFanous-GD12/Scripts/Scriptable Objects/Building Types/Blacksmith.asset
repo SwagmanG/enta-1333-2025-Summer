@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Blacksmith
   m_EditorClassIdentifier: 
   buildingName: Blacksmith
-  buildSizeX: 4
-  buildSizeY: 4
-  buildScale: 1
+  buildingSizeX: 3
+  buildingSizeY: 3
+  buildScale: 0.4
   maxHealth: 30
   currentHealth: 30

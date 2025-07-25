@@ -9,6 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4511211538816187495}
+  - component: {fileID: -8103878321592475439}
+  - component: {fileID: -6666223450494814732}
   m_Layer: 0
   m_Name: GF_LibraryPrefab
   m_TagString: Untagged
@@ -26,12 +28,39 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 14.889839, y: 25.31771, z: -22.510406}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 581171768801289706}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-8103878321592475439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3260392590915799416}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 613d4d2e9b908ff41ab93c2deaad21fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingSettings: {fileID: 11400000, guid: e842b8153e0fcb5488c3d89a8b422101, type: 2}
+  armyType: 0
+--- !u!114 &-6666223450494814732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3260392590915799416}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b43593f71c72cf45a3093533580fd53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingSettings: {fileID: 11400000, guid: e842b8153e0fcb5488c3d89a8b422101, type: 2}
 --- !u!1001 &581171768801427306
 PrefabInstance:
   m_ObjectHideFlags: 0
