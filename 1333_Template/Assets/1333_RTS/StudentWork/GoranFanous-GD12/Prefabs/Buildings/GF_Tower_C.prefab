@@ -60,9 +60,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce5e7a9300c2fa547a0c9fee10302033, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackRange: 5
-  attackInterval: 1
-  damagePerShot: 10
+  attackRadius: 5
+  attackCooldownSeconds: 1
+  damagePerAttack: 10
 --- !u!114 &-7085466392101480535
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75,8 +75,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 613d4d2e9b908ff41ab93c2deaad21fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buildingSettings: {fileID: 11400000, guid: 5554eb1fe1c8dda46bdbb7ed72b5201a, type: 2}
-  armyType: 0
+  buildingConfig: {fileID: 11400000, guid: 5554eb1fe1c8dda46bdbb7ed72b5201a, type: 2}
+  ownerArmyType: 0
 --- !u!1001 &697827405710379460
 PrefabInstance:
   m_ObjectHideFlags: 0

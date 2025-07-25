@@ -182,13 +182,6 @@ public class BuildingManager : MonoBehaviour
         if (buildingType == null || buildingType.buildingSettings == null) return;
 
         string buildingName = buildingType.buildingSettings.BuildingName;
-        int populationCost = buildingType.buildingSettings.PopulationCost;
-
-        if (ResourceManager.Instance.CurrentPopulation < populationCost)
-        {
-            Debug.LogWarning("Not enough population to place this building.");
-            return;
-        }
 
         if (buildingName == "Castle" && placedCastleInstance != null)
         {
@@ -249,8 +242,6 @@ public class BuildingManager : MonoBehaviour
         {
             totalTowersPlaced++;
         }
-
-        ResourceManager.Instance.SpendPopulation(populationCost);
 
         AudioManager.Instance?.PlaySFXAtPosition("Building Placed", placeWorldPos);
         DestroyPreview();
@@ -330,6 +321,7 @@ public class BuildingManager : MonoBehaviour
         if (index >= 0)
         {
             PlacedBuildingInfo info = placedBuildings[index];
+
             MarkGridNodesUnoccupied(info.BaseGridPosition.x, info.BaseGridPosition.y, info.Width, info.Height);
             placedBuildings.RemoveAt(index);
 
@@ -338,11 +330,17 @@ public class BuildingManager : MonoBehaviour
             {
                 string name = bt.buildingSettings.BuildingName;
                 if (name == "Castle")
+                {
                     placedCastleInstance = null;
+                }
                 else if (name == "Barracks")
+                {
                     totalBarracksPlaced = Mathf.Max(0, totalBarracksPlaced - 1);
+                }
                 else if (name == "Tower")
+                {
                     totalTowersPlaced = Mathf.Max(0, totalTowersPlaced - 1);
+                }
             }
         }
         else
@@ -350,6 +348,7 @@ public class BuildingManager : MonoBehaviour
             Debug.LogWarning($"BuildingManager could not find matching building info for destroyed building {destroyedGO.name}");
         }
     }
+
 
     private void OnGUI()
     {
@@ -383,6 +382,7 @@ public class BuildingManager : MonoBehaviour
         GUI.Label(rect1, $"Placing: {name} (R to rotate)", style);
         GUI.Label(rect2, $"Population Cost: {populationCost}", style);
     }
+
 
     private class PlacedBuildingInfo
     {

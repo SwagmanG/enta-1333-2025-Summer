@@ -59,8 +59,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 613d4d2e9b908ff41ab93c2deaad21fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buildingSettings: {fileID: 11400000, guid: 1273928cd71a0d24bb7daae802e35c6f, type: 2}
-  armyType: 0
+  buildingConfig: {fileID: 11400000, guid: 1273928cd71a0d24bb7daae802e35c6f, type: 2}
+  ownerArmyType: 0
 --- !u!1001 &7195245729183757034
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -7,54 +7,54 @@ using RTS_1333;
 /// </summary>
 public class BuildingHealth : MonoBehaviour
 {
-    [SerializeField] private BuildingSettings buildingSettings;   // Settings containing building size and health info
-    [SerializeField] private ArmyType armyType;                   // The army this building belongs to
+    [SerializeField] private BuildingSettings buildingConfig;   // Settings containing building size and health info
+    [SerializeField] private ArmyType ownerArmyType;            // The army this building belongs to
 
-    private int currentHealth;
+    private int currentHitPoints;
 
     // Public getters for external access
-    public ArmyType ArmyType => armyType;
-    public BuildingSettings BuildingSettings => buildingSettings;
-    public int CurrentHealth => currentHealth;
+    public ArmyType OwnerArmyType => ownerArmyType;
+    public BuildingSettings BuildingConfig => buildingConfig;
+    public int CurrentHitPoints => currentHitPoints;
 
     private void Start()
     {
-        if (buildingSettings == null)
+        if (buildingConfig == null)
         {
             Debug.LogError($"BuildingSettings not assigned on {gameObject.name}");
             return;
         }
 
-        currentHealth = buildingSettings.MaxHealth;
+        currentHitPoints = buildingConfig.MaxHealth;
     }
 
     /// <summary>
-    /// Apply damage to the building and check for destruction.
+    /// Applies damage to the building and checks for destruction.
     /// </summary>
     /// <param name="damageAmount">Amount of damage to apply.</param>
-    public void TakeDamage(int damageAmount)
+    public void ApplyDamage(int damageAmount)
     {
-        currentHealth -= damageAmount;
-        Debug.Log($"{buildingSettings.BuildingName} took {damageAmount} damage. Current health: {currentHealth}");
+        currentHitPoints -= damageAmount;
+        Debug.Log($"{buildingConfig.BuildingName} took {damageAmount} damage. Current HP: {currentHitPoints}");
 
-        if (currentHealth <= 0)
+        if (currentHitPoints <= 0)
         {
-            OnDestroyed();
+            HandleDestruction();
         }
     }
 
     /// <summary>
     /// Called when building is destroyed.
-    /// Notifies BuildingManager to free grid nodes, then destroys itself.
+    /// Notifies BuildingManager to free grid nodes, then destroys this object.
     /// </summary>
-    private void OnDestroyed()
+    private void HandleDestruction()
     {
-        Debug.Log($"{buildingSettings.BuildingName} destroyed!");
+        Debug.Log($"{buildingConfig.BuildingName} destroyed!");
 
         // Notify BuildingManager to free grid nodes
         BuildingManager.Instance?.OnBuildingDestroyed(this);
 
-        // Destroy game object
+        // Destroy the building game object
         Destroy(gameObject);
     }
 }

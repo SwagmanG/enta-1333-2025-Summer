@@ -1,16 +1,19 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// Manages global population stats including current and maximum population.
+/// </summary>
 public class ResourceManager : MonoBehaviour
 {
     public static ResourceManager Instance { get; private set; }
 
-    [Header("Population")]
-    [SerializeField] private int currentPopulation = 0;
-    [SerializeField] private int maxPopulation = 50; // Default cap
+    [Header("Population Settings")]
+    [SerializeField] private int currentPopulationCount = 0;
+    [SerializeField] private int maximumPopulationCap = 50; // Default starting cap
 
-    public int CurrentPopulation => currentPopulation;
-    public int MaxPopulation => maxPopulation;
+    public int CurrentPopulation => currentPopulationCount;
+    public int MaxPopulation => maximumPopulationCap;
 
     private void Awake()
     {
@@ -24,50 +27,50 @@ public class ResourceManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Increases the population (e.g., from castle). Caps at MaxPopulation.
+    /// Adds population up to the max cap (e.g., from passive income like castles).
     /// </summary>
-    public void AddPopulation(int amount)
+    public void AddPopulation(int amountToAdd)
     {
-        currentPopulation = Mathf.Min(currentPopulation + amount, maxPopulation);
+        currentPopulationCount = Mathf.Min(currentPopulationCount + amountToAdd, maximumPopulationCap);
     }
 
     /// <summary>
-    /// Decreases population (e.g., from unit cost).
+    /// Spends population (e.g., when units are created).
     /// </summary>
-    public void SpendPopulation(int amount)
+    public void SpendPopulation(int amountToSpend)
     {
-        currentPopulation = Mathf.Max(0, currentPopulation - amount);
+        currentPopulationCount = Mathf.Max(0, currentPopulationCount - amountToSpend);
     }
 
     /// <summary>
-    /// Increases max population cap (e.g., from buildings).
+    /// Increases the max population cap (e.g., from building upgrades).
     /// </summary>
-    public void IncreaseMaxPopulation(int amount)
+    public void IncreaseMaxPopulation(int increaseAmount)
     {
-        maxPopulation += amount;
+        maximumPopulationCap += increaseAmount;
     }
 
     /// <summary>
-    /// Sets max population to a specific value.
+    /// Directly sets the max population cap.
     /// </summary>
-    public void SetMaxPopulation(int newMax)
+    public void SetMaxPopulation(int newMaxCap)
     {
-        maxPopulation = Mathf.Max(0, newMax);
+        maximumPopulationCap = Mathf.Max(0, newMaxCap);
     }
 
     private void OnGUI()
     {
-        GUIStyle style = new GUIStyle(GUI.skin.label)
+        GUIStyle labelStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 20,
             alignment = TextAnchor.UpperRight,
             normal = { textColor = Color.white }
         };
 
-        float width = 300f;
-        float height = 30f;
-        Rect rect = new Rect(Screen.width - width - 10, 10, width, height);
+        float labelWidth = 300f;
+        float labelHeight = 30f;
+        Rect labelRect = new Rect(Screen.width - labelWidth - 10, 10, labelWidth, labelHeight);
 
-        GUI.Label(rect, $"Population: {currentPopulation} / {maxPopulation}", style);
+        GUI.Label(labelRect, $"Population: {currentPopulationCount} / {maximumPopulationCap}", labelStyle);
     }
 }

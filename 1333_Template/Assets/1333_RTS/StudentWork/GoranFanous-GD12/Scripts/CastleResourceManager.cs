@@ -1,54 +1,57 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// Handles passive population generation from the castle over time.
+/// </summary>
 public class CastleResourceManager : MonoBehaviour
 {
-    [Header("Population Generation")]
-    [SerializeField] private float populationInterval = 3f; // Time between population increases
-    [SerializeField] private int populationPerTick = 5;     // Amount generated per interval
-    [SerializeField] private int baseMaxPopulation = 50;    // Max population cap from castle
-    [SerializeField] private float populationModifier = 1f; // Modifier (can be increased later)
+    [Header("Population Generation Settings")]
+    [SerializeField] private float generationIntervalSeconds = 3f; // Time between each population tick
+    [SerializeField] private int populationPerInterval = 5;        // Population added per tick
+    [SerializeField] private int basePopulationCap = 50;           // Base maximum population provided by the castle
+    [SerializeField] private float populationGrowthMultiplier = 1f; // Population growth multiplier (modifiable later)
 
-    private Coroutine generationCoroutine;
+    private Coroutine populationGenerationCoroutine;
 
     private void Start()
     {
-        generationCoroutine = StartCoroutine(GeneratePopulationRoutine());
+        populationGenerationCoroutine = StartCoroutine(PopulationGenerationLoop());
     }
 
-    private IEnumerator GeneratePopulationRoutine()
+    private IEnumerator PopulationGenerationLoop()
     {
         while (true)
         {
-            yield return new WaitForSeconds(populationInterval);
+            yield return new WaitForSeconds(generationIntervalSeconds);
 
             if (ResourceManager.Instance == null)
             {
-                Debug.LogWarning("CastleResourceManager: ResourceManager instance not found.");
+                Debug.LogWarning("CastleResourceManager: Missing ResourceManager instance.");
                 continue;
             }
 
-            int currentPop = ResourceManager.Instance.CurrentPopulation;
-            int currentMax = ResourceManager.Instance.MaxPopulation;
+            int currentPopulation = ResourceManager.Instance.CurrentPopulation;
+            int maxPopulation = ResourceManager.Instance.MaxPopulation;
 
-            if (currentPop < currentMax)
+            if (currentPopulation < maxPopulation)
             {
-                int adjustedAmount = Mathf.FloorToInt(populationPerTick * populationModifier);
-                int spaceLeft = currentMax - currentPop;
-                int finalAmount = Mathf.Min(adjustedAmount, spaceLeft);
+                int adjustedPopulation = Mathf.FloorToInt(populationPerInterval * populationGrowthMultiplier);
+                int availableSpace = maxPopulation - currentPopulation;
+                int populationToAdd = Mathf.Min(adjustedPopulation, availableSpace);
 
-                ResourceManager.Instance.AddPopulation(finalAmount);
-                Debug.Log($"Castle generated {finalAmount} population (modifier: {populationModifier}x)");
+                ResourceManager.Instance.AddPopulation(populationToAdd);
+                Debug.Log($"Castle generated {populationToAdd} population (x{populationGrowthMultiplier} multiplier).");
             }
         }
     }
 
-    public float GetPopulationModifier() => populationModifier;
+    public float GetPopulationGrowthMultiplier() => populationGrowthMultiplier;
 
-    public void SetPopulationModifier(float modifier)
+    public void SetPopulationGrowthMultiplier(float multiplier)
     {
-        populationModifier = modifier;
+        populationGrowthMultiplier = multiplier;
     }
 
-    public int GetBaseMaxPopulation() => baseMaxPopulation;
+    public int GetBasePopulationCap() => basePopulationCap;
 }

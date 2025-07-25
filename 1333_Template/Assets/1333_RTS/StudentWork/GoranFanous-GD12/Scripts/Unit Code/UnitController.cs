@@ -48,7 +48,10 @@ public class UnitController : MonoBehaviour
             if (distanceToTarget <= attackRange && attackTimer >= attackCooldown)
             {
                 int damageAmount = unitType != null ? unitType.Damage : 1;
-                currentTarget.TakeDamage(damageAmount);
+
+                // Use ApplyDamage instead of TakeDamage
+                currentTarget.ApplyDamage(damageAmount);
+
                 attackTimer = 0f;
 
                 if (movementCoroutine != null)
@@ -71,10 +74,10 @@ public class UnitController : MonoBehaviour
 
                 foreach (var structure in allStructures)
                 {
-                    if (structure == null || structure.ArmyType != ArmyType.Player)
+                    if (structure == null || structure.OwnerArmyType != ArmyType.Player)
                         continue;
 
-                    string nameLower = structure.BuildingSettings.BuildingName.ToLowerInvariant();
+                    string nameLower = structure.BuildingConfig.BuildingName.ToLowerInvariant();
 
                     if (unitType.AttackType == AttackType.TowerBreaker && !nameLower.Contains("tower"))
                         continue;
@@ -117,21 +120,15 @@ public class UnitController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Finds the closest walkable node adjacent to the building footprint, within attack range.
-    /// </summary>
-    /// <param name="building">Target building.</param>
-    /// <returns>World position of the node to pathfind to.</returns>
     private Vector3 GetClosestReachableNodePositionAroundBuilding(BuildingHealth building)
     {
         Vector2Int baseGridPos = BuildingManager.Instance.gridManager.GetGridPosFromWorld(building.transform.position);
-        int width = building.BuildingSettings.BuildingSizeX;
-        int height = building.BuildingSettings.BuildingSizeY;
+        int width = building.BuildingConfig.BuildingSizeX;
+        int height = building.BuildingConfig.BuildingSizeY;
         float nodeSize = BuildingManager.Instance.gridManager.GridSettings.NodeSize;
 
         List<GridNode> candidateNodes = new();
 
-        // Check all nodes around building footprint perimeter (including diagonals)
         for (int x = baseGridPos.x - 1; x <= baseGridPos.x + width; x++)
         {
             for (int y = baseGridPos.y - 1; y <= baseGridPos.y + height; y++)
@@ -146,7 +143,6 @@ public class UnitController : MonoBehaviour
                 GridNode node = BuildingManager.Instance.gridManager.GetNode(x, y);
                 if (node != null && node.Walkable)
                 {
-                    // Check if within attack range
                     float distanceToBuilding = Vector3.Distance(node.WorldPosition, building.transform.position);
                     float attackRange = unitType != null ? unitType.Range : 1.5f;
 
@@ -158,7 +154,6 @@ public class UnitController : MonoBehaviour
             }
         }
 
-        // If no candidates found within range, fallback to closest walkable perimeter node ignoring range
         if (candidateNodes.Count == 0)
         {
             for (int x = baseGridPos.x - 1; x <= baseGridPos.x + width; x++)
@@ -181,7 +176,6 @@ public class UnitController : MonoBehaviour
             }
         }
 
-        // Find closest candidate node to current position
         GridNode closestNode = null;
         float closestDist = float.MaxValue;
         Vector3 unitPos = transform.position;
@@ -199,7 +193,6 @@ public class UnitController : MonoBehaviour
         if (closestNode != null)
             return closestNode.WorldPosition;
 
-        // If all else fails, return building center (likely unreachable)
         return building.transform.position;
     }
 

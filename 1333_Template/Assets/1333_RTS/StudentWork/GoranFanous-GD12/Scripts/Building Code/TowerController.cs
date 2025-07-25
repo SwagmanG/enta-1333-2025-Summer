@@ -10,21 +10,20 @@ using RTS_1333; // Assuming UnitType and AttackType are defined in this namespac
 public class TowerController : MonoBehaviour
 {
     [Header("Tower Configuration")]
-    [SerializeField] private float attackRange = 5f;                // Attack radius in world units
-    [SerializeField] private float attackInterval = 1f;             // Time delay between consecutive attacks in seconds
-    [SerializeField] private int damagePerShot = 10;                // Amount of damage dealt per attack
+    [SerializeField] private float attackRadius = 5f;                 // Attack radius in world units
+    [SerializeField] private float attackCooldownSeconds = 1f;        // Time delay between consecutive attacks in seconds
+    [SerializeField] private int damagePerAttack = 10;                // Amount of damage dealt per attack
 
-    private GridManager gridManager;                                // Reference to the GridManager instance to access the grid
-    private UnitController currentTarget;                           // The currently targeted enemy unit
-    private float attackTimer = 0f;                                 // Timer to track time elapsed since last attack
+    private GridManager gridManagerInstance;                          // Reference to the GridManager instance to access the grid
+    private UnitController currentAttackTarget;                       // The currently targeted enemy unit
+    private float attackCooldownTimer = 0f;                           // Timer to track time elapsed since last attack
 
     private void Awake()
     {
-        // Attempt to find the GridManager instance in the scene
-        if (gridManager == null)
+        if (gridManagerInstance == null)
         {
-            gridManager = FindFirstObjectByType<GridManager>();
-            if (gridManager == null)
+            gridManagerInstance = FindFirstObjectByType<GridManager>();
+            if (gridManagerInstance == null)
             {
                 Debug.LogError("TowerController: GridManager not found in scene!");
             }
@@ -33,34 +32,34 @@ public class TowerController : MonoBehaviour
 
     private void Update()
     {
-        // Increment the attack timer by the time elapsed since last frame
-        attackTimer += Time.deltaTime;
+        // Update the cooldown timer by the time elapsed since last frame
+        attackCooldownTimer += Time.deltaTime;
 
         // If no valid target or target is out of range or destroyed, find a new one
-        if (currentTarget == null || !IsValidTarget(currentTarget))
+        if (currentAttackTarget == null || !IsTargetValid(currentAttackTarget))
         {
-            currentTarget = FindNearestEnemyInRange();
+            currentAttackTarget = FindClosestEnemyWithinRange();
         }
 
-        // If there is a target and the attack cooldown has passed, attack
-        if (currentTarget != null && attackTimer >= attackInterval)
+        // If there is a target and the attack cooldown has elapsed, attack
+        if (currentAttackTarget != null && attackCooldownTimer >= attackCooldownSeconds)
         {
-            AttackTarget(currentTarget);
-            attackTimer = 0f; // Reset attack timer after attacking
+            Attack(currentAttackTarget);
+            attackCooldownTimer = 0f; // Reset cooldown timer after attacking
         }
     }
 
     /// <summary>
-    /// Finds the closest enemy unit within the tower's attack range, prioritizing TowerBreakers.
+    /// Finds the closest enemy unit within the tower's attack radius, prioritizing TowerBreakers.
     /// </summary>
     /// <returns>The nearest enemy UnitController, or null if none in range.</returns>
-    private UnitController FindNearestEnemyInRange()
+    private UnitController FindClosestEnemyWithinRange()
     {
         UnitController[] allUnits = GameObject.FindObjectsByType<UnitController>(FindObjectsSortMode.None);
         UnitController nearestTowerBreaker = null;
-        UnitController nearestEnemy = null;
-        float closestBreakerDistance = float.MaxValue;
-        float closestEnemyDistance = float.MaxValue;
+        UnitController nearestEnemyUnit = null;
+        float nearestBreakerDistance = float.MaxValue;
+        float nearestEnemyDistance = float.MaxValue;
 
         foreach (UnitController unit in allUnits)
         {
@@ -68,48 +67,48 @@ public class TowerController : MonoBehaviour
                 continue;
 
             float distanceToUnit = Vector3.Distance(transform.position, unit.transform.position);
-            if (distanceToUnit > attackRange)
+            if (distanceToUnit > attackRadius)
                 continue;
 
-            // Check if it's a TowerBreaker
-            if (unit.unitType.AttackType == AttackType.TowerBreaker && distanceToUnit < closestBreakerDistance)
+            // Check if it's a TowerBreaker and closer than current closest TowerBreaker
+            if (unit.unitType.AttackType == AttackType.TowerBreaker && distanceToUnit < nearestBreakerDistance)
             {
                 nearestTowerBreaker = unit;
-                closestBreakerDistance = distanceToUnit;
+                nearestBreakerDistance = distanceToUnit;
             }
 
-            // Track any closest enemy
-            if (distanceToUnit < closestEnemyDistance)
+            // Track any closest enemy unit
+            if (distanceToUnit < nearestEnemyDistance)
             {
-                nearestEnemy = unit;
-                closestEnemyDistance = distanceToUnit;
+                nearestEnemyUnit = unit;
+                nearestEnemyDistance = distanceToUnit;
             }
         }
 
         // Prioritize TowerBreaker if one is in range
-        return nearestTowerBreaker != null ? nearestTowerBreaker : nearestEnemy;
+        return nearestTowerBreaker != null ? nearestTowerBreaker : nearestEnemyUnit;
     }
 
     /// <summary>
     /// Checks if the specified unit is still a valid attack target (exists, alive, and in range).
     /// </summary>
-    private bool IsValidTarget(UnitController unit)
+    private bool IsTargetValid(UnitController unit)
     {
         if (unit == null) return false;
 
         float distanceToUnit = Vector3.Distance(transform.position, unit.transform.position);
-        return distanceToUnit <= attackRange && unit.armyType == ArmyType.Enemy;
+        return distanceToUnit <= attackRadius && unit.armyType == ArmyType.Enemy;
     }
 
     /// <summary>
     /// Applies damage to the targeted enemy unit and draws a debug line to show the attack.
     /// </summary>
-    private void AttackTarget(UnitController enemy)
+    private void Attack(UnitController enemyUnit)
     {
-        if (enemy == null) return;
+        if (enemyUnit == null) return;
 
-        enemy.TakeDamage(damagePerShot);
-        Debug.DrawLine(transform.position + Vector3.up * 1f, enemy.transform.position + Vector3.up * 1f, Color.red, 0.2f);
+        enemyUnit.TakeDamage(damagePerAttack);
+        Debug.DrawLine(transform.position + Vector3.up * 1f, enemyUnit.transform.position + Vector3.up * 1f, Color.red, 0.2f);
     }
 
     /// <summary>
@@ -118,12 +117,12 @@ public class TowerController : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
+        Gizmos.DrawWireSphere(transform.position, attackRadius);
 
-        if (currentTarget != null)
+        if (currentAttackTarget != null)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawLine(transform.position + Vector3.up * 1f, currentTarget.transform.position + Vector3.up * 1f);
+            Gizmos.DrawLine(transform.position + Vector3.up * 1f, currentAttackTarget.transform.position + Vector3.up * 1f);
         }
     }
 }
