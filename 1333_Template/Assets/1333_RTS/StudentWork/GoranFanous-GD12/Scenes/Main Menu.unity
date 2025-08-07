@@ -187,6 +187,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!82 &27600460 stripped
+AudioSource:
+  m_CorrespondingSourceObject: {fileID: 284049767150480243, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+  m_PrefabInstance: {fileID: 1230615773}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &72817828
 GameObject:
   m_ObjectHideFlags: 0
@@ -219,8 +224,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a576d768f93422a4b92ff97dc4b2bfba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  loadingScreenObject: {fileID: 1459069742}
-  progressBar: {fileID: 1003600563}
+  LoadingScreenObject: {fileID: 1459069742}
+  ProgressBar: {fileID: 1003600563}
 --- !u!114 &72817830
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1242,6 +1247,74 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: SfxSource
+      value: 
+      objectReference: {fileID: 27600460}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: MusicSource
+      value: 
+      objectReference: {fileID: 1902168334}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: MusicEnabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: AmbienceSource
+      value: 
+      objectReference: {fileID: 1902168334}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: SfxClips.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: MusicTracks.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: AmbienceTracks.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: SfxClips.Array.data[0].Name
+      value: Enter/Exit Buildmode
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: SfxClips.Array.data[1].Name
+      value: Cycle Buildings
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: SfxClips.Array.data[2].Name
+      value: Building Placed
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: MusicTracks.Array.data[0].Name
+      value: MenuTheme
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: SfxClips.Array.data[0].AudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: d8cb365dc4912344d88100164af32f77, type: 3}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: SfxClips.Array.data[1].AudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 0d598d24b48b92044b00f60156841247, type: 3}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: SfxClips.Array.data[2].AudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 80281dc0c8933154e9c33f90e4ed5acc, type: 3}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: AmbienceTracks.Array.data[0].Name
+      value: ForestAmbience
+      objectReference: {fileID: 0}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: MusicTracks.Array.data[0].AudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 146a605e7d323fd4f83a5bac01b5ca38, type: 3}
+    - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: AmbienceTracks.Array.data[0].AudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 511191cd64f35604fb7a0a0937dcc1d9, type: 3}
     - target: {fileID: 8061233094854099030, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
       propertyPath: m_Name
       value: AudioManager
@@ -1684,6 +1757,11 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!82 &1902168334 stripped
+AudioSource:
+  m_CorrespondingSourceObject: {fileID: 234118870325356501, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+  m_PrefabInstance: {fileID: 1230615773}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1933790276
 GameObject:
   m_ObjectHideFlags: 0

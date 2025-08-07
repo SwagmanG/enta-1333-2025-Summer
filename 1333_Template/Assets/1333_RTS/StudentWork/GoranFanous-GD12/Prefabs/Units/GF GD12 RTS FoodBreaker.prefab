@@ -9130,8 +9130,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b929bcf92a62274094118c5a0cf63a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ArmyType: 1
-  UnitType: {fileID: 11400000, guid: 40318240a8284fa468156180d6e0ffc3, type: 2}
+  armyType: 1
+  unitType: {fileID: 11400000, guid: 40318240a8284fa468156180d6e0ffc3, type: 2}
   AstarPathfinding: {fileID: -7913304579540136578}
 --- !u!1 &156456
 GameObject:

@@ -71,13 +71,13 @@ public class UnitSpawner : MonoBehaviour
 
         if (!canSpawnWave)
         {
-            // Enable wave spawning for the first time
             canSpawnWave = true;
             Debug.Log("Force started first wave!");
+            StartCoroutine(CountdownToNextWave(currentWave)); // start countdown with optional manual trigger
+
         }
         else
         {
-            // Stop current wave timing and immediately start the next wave
             StopCoroutine(waveCoroutine);
             waveCoroutine = StartCoroutine(SpawnWaves(currentWave));
             Debug.Log($"Force started wave {currentWave + 1}!");
@@ -113,13 +113,15 @@ public class UnitSpawner : MonoBehaviour
             if (currentWave >= NumberOfWaves)
                 break;
 
-            // Wait for the specified time between waves
-            float timer = 0f;
-            while (timer < TimeBetweenWaves)
-            {
-                timer += Time.deltaTime;
-                yield return null;
-            }
+
+            // Start next countdown through UI Manager
+            GameUiManager.Instance.StartWaveCountdown(currentWave);
+
+            // Wait until ForceStartCurrentWave is called again
+            yield break;
+
+           
+           
         }
     }
 
@@ -181,9 +183,50 @@ public class UnitSpawner : MonoBehaviour
         Debug.Log($"Wave {waveIndex + 1} spawned with total enemies: {aliveEnemies}");
     }
 
-    // === SPAWN POSITION UTILITIES ===
-    // Helper methods for finding good spawn locations
+    // Starts a countdown and allows player to manually trigger wave early
+    private IEnumerator CountdownToNextWave(int waveIndex)
+    {
+        float countdownTime = 60f + (waveIndex * 30f); // 1:00, 1:30, etc.
+        bool waveStarted = false;
 
+        void ManualStart()
+        {
+            if (!waveStarted)
+            {
+                waveStarted = true;
+                if (WaveStartButton != null)
+                    WaveStartButton.onClick.RemoveListener(ManualStart);
+
+                StopCoroutine(nameof(CountdownToNextWave));
+                waveCoroutine = StartCoroutine(SpawnWaves(waveIndex));
+            }
+        }
+
+        if (WaveStartButton != null)
+        {
+            WaveStartButton.gameObject.SetActive(true);
+            WaveStartButton.onClick.AddListener(ManualStart);
+        }
+
+        GameUiManager.Instance.StartWaveCountdown(waveIndex);
+
+        while (countdownTime > 0f && !waveStarted)
+        {
+            countdownTime -= Time.deltaTime;
+            yield return null;
+        }
+
+        if (!waveStarted)
+        {
+            if (WaveStartButton != null)
+                WaveStartButton.onClick.RemoveListener(ManualStart);
+
+            waveCoroutine = StartCoroutine(SpawnWaves(waveIndex));
+        }
+    }
+
+
+    // === SPAWN POSITION UTILITIES ===
     // Get a random position along the edges of the grid for enemy spawning
     // This ensures enemies spawn from the borders and move inward
     private Vector2Int GetRandomEdgeGridPosition()

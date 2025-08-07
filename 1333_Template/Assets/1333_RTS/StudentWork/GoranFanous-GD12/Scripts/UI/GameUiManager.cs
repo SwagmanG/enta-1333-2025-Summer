@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.Audio;
+using System.Collections;
 
 public class GameUiManager : MonoBehaviour
 {
@@ -24,6 +25,11 @@ public class GameUiManager : MonoBehaviour
     [Header("Audio Sliders Panel")]
     [SerializeField] private GameObject audioSliderPanel; // Parent panel of sliders
     [SerializeField] private AudioMixer audioMixer;
+
+    // Wave countdown UI
+    [Header("Wave Countdown UI")]
+    [SerializeField] private TextMeshProUGUI waveCountdownText;
+    private Coroutine countdownCoroutine;
 
     // Game state overlays - shown when the game ends
     [Header("Game Over UI")]
@@ -49,14 +55,63 @@ public class GameUiManager : MonoBehaviour
     // === GAME STATE UI METHODS ===
     // Handle showing game over and victory screens
 
+    private IEnumerator ReturnToMainMenuAfterDelay(float delaySeconds)
+    {
+        yield return new WaitForSeconds(delaySeconds);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+    }
+
+    // Start and update the countdown for the next wave
+    public void StartWaveCountdown(int waveIndex)
+    {
+        if (countdownCoroutine != null)
+            StopCoroutine(countdownCoroutine);
+
+        countdownCoroutine = StartCoroutine(WaveCountdownRoutine(waveIndex));
+    }
+
+    // Coroutine to display countdown and trigger wave start
+    private IEnumerator WaveCountdownRoutine(int waveIndex)
+    {
+        // Calculate time based on wave number
+        float countdownTime = 60f + (waveIndex * 30f); // 1:00, 1:30, 2:00, etc.
+
+        while (countdownTime > 0f)
+        {
+            int minutes = Mathf.FloorToInt(countdownTime / 60f);
+            int seconds = Mathf.FloorToInt(countdownTime % 60f);
+
+            if (waveCountdownText != null)
+                waveCountdownText.text = $"Wave spawns in: {minutes:00}:{seconds:00}";
+
+            countdownTime -= Time.deltaTime;
+            yield return null;
+        }
+
+        if (waveCountdownText != null)
+            waveCountdownText.text = "Wave starting...";
+
+        yield return new WaitForSeconds(1f); // brief pause before starting
+
+        FindFirstObjectByType<UnitSpawner>()?.ForceStartCurrentWave(); // start wave
+    }
+
+
     // Show the game over screen and pause the game
     public void TriggerGameOver()
     {
         if (gameOverOverlay != null)
             gameOverOverlay.SetActive(true);
 
-        Time.timeScale = 0f;
+        // Unpause the game (so the coroutine can run), then start delayed return
+        Time.timeScale = 1f;
+        StartCoroutine(ReturnToMainMenuAfterDelay(3f));
     }
+
+    // Wait a few seconds, then return to main menu scene
+   
+
+
 
     // Show the victory screen and pause the game
     public void TriggerVictory()
