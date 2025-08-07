@@ -61,6 +61,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingConfig: {fileID: 11400000, guid: 1273928cd71a0d24bb7daae802e35c6f, type: 2}
   ownerArmyType: 0
+  OwnerArmyType: 0
+  BuildingConfig: {fileID: 11400000, guid: 1273928cd71a0d24bb7daae802e35c6f, type: 2}
+  CurrentHitPoints: 0
 --- !u!1001 &7195245729183757034
 PrefabInstance:
   m_ObjectHideFlags: 0

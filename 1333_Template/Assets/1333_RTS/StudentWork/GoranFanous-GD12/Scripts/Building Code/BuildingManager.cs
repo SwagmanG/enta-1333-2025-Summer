@@ -1,12 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+using System.Collections;
 
 public class BuildingManager : MonoBehaviour
 {
-    public static BuildingManager Instance { get; private set; }
+    public static BuildingManager BMInstance { get; private set; }
 
     [Header("References")]
     public GridManager gridManager;
+    public GameUiManager guiManager;
 
     [Header("Building Prefabs")]
     [SerializeField] private List<GameObject> buildingPrefabs;
@@ -15,10 +18,12 @@ public class BuildingManager : MonoBehaviour
     [SerializeField] private Material previewValidMaterial;
     [SerializeField] private Material previewInvalidMaterial;
 
-    private int currentBuildingIndex = 0;
     private Camera mainCamera;
     private GameObject previewBuildingInstance;
     private int currentRotation = 0;
+
+    private List<GameObject> filteredBuildingPrefabs = new();
+    private int currentFilteredIndex = 0;
 
     private readonly List<PlacedBuildingInfo> placedBuildings = new();
     private GameObject placedCastleInstance = null;
@@ -28,27 +33,30 @@ public class BuildingManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (BMInstance != null && BMInstance != this)
         {
             Destroy(gameObject);
             return;
         }
-        Instance = this;
+        BMInstance = this;
     }
 
     private void Start()
     {
         mainCamera = Camera.main;
+        UpdateFilteredBuildings();
+        NotifyUIUpdate();
     }
 
     private void Update()
     {
-        if (!BuildModeController.Instance.IsInBuildMode)
+        if (!BuildModeController.BMCInstance.IsInBuildMode)
         {
             DestroyPreview();
             return;
         }
 
+        UpdateFilteredBuildings();
         HandleBuildingCycleInput();
         HandleRotationInput();
         UpdatePreviewBuilding();
@@ -59,28 +67,62 @@ public class BuildingManager : MonoBehaviour
         }
     }
 
+
+    private void UpdateFilteredBuildings()
+    {
+        filteredBuildingPrefabs = buildingPrefabs.Where(prefab =>
+        {
+            BuildingType buildingType = prefab.GetComponent<BuildingType>();
+            if (buildingType == null || buildingType.buildingSettings == null) return false;
+
+            string name = buildingType.buildingSettings.BuildingName;
+
+            if (name == "Castle" && placedCastleInstance != null)
+                return false;
+
+            if (name == "Tower")
+            {
+                if (totalBarracksPlaced == 0) return false;
+                if (totalTowersPlaced >= totalBarracksPlaced * 6) return false;
+            }
+
+            return true;
+
+        }).ToList();
+
+        if (filteredBuildingPrefabs.Count == 0)
+        {
+            currentFilteredIndex = 0;
+        }
+        else
+        {
+            currentFilteredIndex %= filteredBuildingPrefabs.Count;
+        }
+    }
+
     private void HandleBuildingCycleInput()
     {
-        if (buildingPrefabs == null || buildingPrefabs.Count == 0)
+        if (filteredBuildingPrefabs.Count == 0)
             return;
 
-        bool changed = false;
+        bool cycled = false;
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            currentBuildingIndex = (currentBuildingIndex + 1) % buildingPrefabs.Count;
-            changed = true;
+            currentFilteredIndex = (currentFilteredIndex + 1) % filteredBuildingPrefabs.Count;
+            cycled = true;
         }
         else if (Input.GetKeyDown(KeyCode.Q))
         {
-            currentBuildingIndex = (currentBuildingIndex - 1 + buildingPrefabs.Count) % buildingPrefabs.Count;
-            changed = true;
+            currentFilteredIndex = (currentFilteredIndex - 1 + filteredBuildingPrefabs.Count) % filteredBuildingPrefabs.Count;
+            cycled = true;
         }
 
-        if (changed)
+        if (cycled)
         {
             AudioManager.Instance?.PlaySFX("Cycle Buildings");
             DestroyPreview();
+            NotifyUIUpdate();
         }
     }
 
@@ -96,7 +138,7 @@ public class BuildingManager : MonoBehaviour
 
     private void UpdatePreviewBuilding()
     {
-        if (buildingPrefabs == null || buildingPrefabs.Count == 0 || gridManager == null)
+        if (filteredBuildingPrefabs.Count == 0 || gridManager == null)
             return;
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -109,25 +151,11 @@ public class BuildingManager : MonoBehaviour
         Vector3 worldPos = hitInfo.point;
         Vector2Int gridPos = gridManager.GetGridPosFromWorld(worldPos);
 
-        GameObject prefab = buildingPrefabs[currentBuildingIndex];
+        GameObject prefab = filteredBuildingPrefabs[currentFilteredIndex];
         if (prefab == null) return;
 
         BuildingType buildingType = prefab.GetComponent<BuildingType>();
         if (buildingType == null || buildingType.buildingSettings == null) return;
-
-        string buildingName = buildingType.buildingSettings.BuildingName;
-
-        if (buildingName == "Castle" && placedCastleInstance != null)
-        {
-            DestroyPreview();
-            return;
-        }
-
-        if (buildingName == "Tower" && totalTowersPlaced >= totalBarracksPlaced * 6)
-        {
-            DestroyPreview();
-            return;
-        }
 
         int width = buildingType.buildingSettings.BuildingSizeX;
         int height = buildingType.buildingSettings.BuildingSizeY;
@@ -138,7 +166,17 @@ public class BuildingManager : MonoBehaviour
         int finalHeight = rotated ? width : height;
 
         Vector3 previewWorldPos = CalculateWorldPosition(gridPos, finalWidth, finalHeight, nodeSize);
+
         bool canPlace = CanPlaceBuildingAt(gridPos.x, gridPos.y, finalWidth, finalHeight);
+
+        int requiredPopulation = buildingType.buildingSettings.PopulationCost;
+        int requiredGold = buildingType.buildingSettings.GoldCost;
+
+        bool hasEnoughPopulation = ResourceManager.RMInstance.CurrentPopulation >= requiredPopulation;
+        bool hasEnoughGold = ResourceManager.RMInstance.CurrentGold >= requiredGold;
+
+        bool hasEnoughResources = hasEnoughPopulation && hasEnoughGold;
+        bool showAsValid = canPlace && hasEnoughResources;
 
         if (previewBuildingInstance == null)
         {
@@ -148,13 +186,12 @@ public class BuildingManager : MonoBehaviour
 
         previewBuildingInstance.transform.position = previewWorldPos;
         previewBuildingInstance.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
-        SetPreviewMaterial(previewBuildingInstance, canPlace);
+        SetPreviewMaterial(previewBuildingInstance, showAsValid);
     }
 
     private void SetPreviewMaterial(GameObject building, bool canPlace)
     {
         Material targetMaterial = canPlace ? previewValidMaterial : previewInvalidMaterial;
-
         foreach (var renderer in building.GetComponentsInChildren<Renderer>())
         {
             renderer.material = targetMaterial;
@@ -172,26 +209,30 @@ public class BuildingManager : MonoBehaviour
 
     private void TryPlaceBuildingAtMouseClick()
     {
-        if (buildingPrefabs == null || buildingPrefabs.Count == 0 || gridManager == null)
+        if (filteredBuildingPrefabs.Count == 0 || gridManager == null)
             return;
 
-        GameObject prefab = buildingPrefabs[currentBuildingIndex];
+        GameObject prefab = filteredBuildingPrefabs[currentFilteredIndex];
         if (prefab == null) return;
 
         BuildingType buildingType = prefab.GetComponent<BuildingType>();
         if (buildingType == null || buildingType.buildingSettings == null) return;
 
         string buildingName = buildingType.buildingSettings.BuildingName;
+        int populationCost = buildingType.buildingSettings.PopulationCost;
+        int goldCost = buildingType.buildingSettings.GoldCost;
 
-        if (buildingName == "Castle" && placedCastleInstance != null)
+        var resourceManager = ResourceManager.RMInstance;
+
+        if (resourceManager.CurrentPopulation < populationCost)
         {
-            Debug.LogWarning("Only one Castle can exist at a time.");
+            Debug.LogWarning($"Not enough population to place {buildingName}. Requires {populationCost}, but only {resourceManager.CurrentPopulation} available.");
             return;
         }
 
-        if (buildingName == "Tower" && totalTowersPlaced >= totalBarracksPlaced * 6)
+        if (resourceManager.CurrentGold < goldCost)
         {
-            Debug.LogWarning("You need to place another Barracks to place more towers.");
+            Debug.LogWarning($"Not enough gold to place {buildingName}. Requires {goldCost}, but only {resourceManager.CurrentGold} available.");
             return;
         }
 
@@ -216,6 +257,9 @@ public class BuildingManager : MonoBehaviour
             return;
         }
 
+        resourceManager.SpendPopulation(populationCost);
+        resourceManager.SpendGold(goldCost);
+
         Vector3 placeWorldPos = CalculateWorldPosition(gridPos, finalWidth, finalHeight, nodeSize);
         GameObject newBuilding = Instantiate(prefab, placeWorldPos, Quaternion.Euler(0, currentRotation, 0));
         newBuilding.transform.localScale = Vector3.one * buildingType.buildingSettings.BuildScale;
@@ -233,29 +277,71 @@ public class BuildingManager : MonoBehaviour
         if (buildingName == "Castle")
         {
             placedCastleInstance = newBuilding;
+
+            CastleResourceManager castleRes = newBuilding.GetComponent<CastleResourceManager>();
+            if (castleRes != null)
+            {
+                castleRes.ActivateResourceGeneration();
+            }
         }
-        else if (buildingName == "Barracks")
+        else
         {
-            totalBarracksPlaced++;
+            StartCoroutine(ApplyFoodTaxCoroutine(buildingType.buildingSettings.FoodTax));
+
+            if (placedCastleInstance != null)
+            {
+                CastleResourceManager castleRes = placedCastleInstance.GetComponent<CastleResourceManager>();
+                if (castleRes != null)
+                {
+                    castleRes.AddToGoldModifier(buildingType.buildingSettings.GoldMod);
+                    castleRes.AddToFoodModifier(buildingType.buildingSettings.FoodMod);
+                    castleRes.AddToPopulationModifier(buildingType.buildingSettings.PopulationMod);
+                    Debug.Log($"Added modifiers from {buildingName} to castle.");
+                }
+            }
         }
-        else if (buildingName == "Tower")
-        {
-            totalTowersPlaced++;
-        }
+
+        if (buildingName == "Barracks") totalBarracksPlaced++;
+        else if (buildingName == "Tower") totalTowersPlaced++;
 
         AudioManager.Instance?.PlaySFXAtPosition("Building Placed", placeWorldPos);
         DestroyPreview();
     }
 
+    private IEnumerator ApplyFoodTaxCoroutine(int foodTax)
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(20f);
+            ResourceManager.RMInstance?.SpendFood(foodTax);
+        }
+    }
+
     private bool CanPlaceBuildingAt(int startX, int startY, int width, int height)
     {
-        for (int x = 0; x < width; x++)
+        int checkStartX = startX - 1;
+        int checkStartY = startY - 1;
+        int checkEndX = startX + width;
+        int checkEndY = startY + height;
+
+        for (int x = checkStartX; x <= checkEndX; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = checkStartY; y <= checkEndY; y++)
             {
-                GridNode node = gridManager.GetNode(startX + x, startY + y);
-                if (node == null || !node.Walkable)
-                    return false;
+                if (x >= startX && x < startX + width && y >= startY && y < startY + height)
+                {
+                    // core building footprint must be walkable
+                    GridNode node = gridManager.GetNode(x, y);
+                    if (node == null || !node.Walkable)
+                        return false;
+                }
+                else
+                {
+                    // border tiles must NOT be occupied by a building (adjacent nodes)
+                    GridNode node = gridManager.GetNode(x, y);
+                    if (node != null && node.BuildingOccupied)
+                        return false;
+                }
             }
         }
         return true;
@@ -263,6 +349,7 @@ public class BuildingManager : MonoBehaviour
 
     private void MarkGridNodesOccupied(int startX, int startY, int width, int height)
     {
+        // Mark core footprint nodes non-walkable and not adjacent occupied
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -271,7 +358,34 @@ public class BuildingManager : MonoBehaviour
                 if (node != null)
                 {
                     node.Walkable = false;
+                    node.BuildingOccupied = true; // Occupied by building
                     gridManager.MarkOccupied(node, null);
+                }
+            }
+        }
+
+        // Mark adjacent border nodes as BuildingOccupied = true but keep walkable
+        int borderStartX = startX - 1;
+        int borderStartY = startY - 1;
+        int borderEndX = startX + width;
+        int borderEndY = startY + height;
+
+        for (int x = borderStartX; x <= borderEndX; x++)
+        {
+            for (int y = borderStartY; y <= borderEndY; y++)
+            {
+                bool isCore = (x >= startX && x < startX + width) && (y >= startY && y < startY + height);
+                if (isCore)
+                    continue;
+
+                GridNode node = gridManager.GetNode(x, y);
+                if (node != null)
+                {
+                    // Only mark as occupied if walkable (don't overwrite core nodes)
+                    if (node.Walkable)
+                    {
+                        node.BuildingOccupied = true;
+                    }
                 }
             }
         }
@@ -279,6 +393,7 @@ public class BuildingManager : MonoBehaviour
 
     private void MarkGridNodesUnoccupied(int startX, int startY, int width, int height)
     {
+        // Clear core footprint nodes
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -287,10 +402,58 @@ public class BuildingManager : MonoBehaviour
                 if (node != null)
                 {
                     node.Walkable = true;
+                    node.BuildingOccupied = false;
                     gridManager.MarkUnoccupied(node, null);
                 }
             }
         }
+
+        // Clear adjacent border nodes if no other buildings occupy them
+        int borderStartX = startX - 1;
+        int borderStartY = startY - 1;
+        int borderEndX = startX + width;
+        int borderEndY = startY + height;
+
+        for (int x = borderStartX; x <= borderEndX; x++)
+        {
+            for (int y = borderStartY; y <= borderEndY; y++)
+            {
+                bool isCore = (x >= startX && x < startX + width) && (y >= startY && y < startY + height);
+                if (isCore)
+                    continue;
+
+                GridNode node = gridManager.GetNode(x, y);
+                if (node != null)
+                {
+                    // Only clear if walkable and currently occupied
+                    if (node.Walkable && node.BuildingOccupied)
+                    {
+                        // Check if this node is adjacent to any other building footprints (avoid clearing if adjacent to other buildings)
+                        if (!IsNodeAdjacentToAnyBuilding(x, y))
+                        {
+                            node.BuildingOccupied = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private bool IsNodeAdjacentToAnyBuilding(int x, int y)
+    {
+        // Check the 3x3 area around the node for any core building footprints
+        for (int checkX = x - 1; checkX <= x + 1; checkX++)
+        {
+            for (int checkY = y - 1; checkY <= y + 1; checkY++)
+            {
+                GridNode node = gridManager.GetNode(checkX, checkY);
+                if (node != null && !node.Walkable && node.BuildingOccupied)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private Vector3 CalculateWorldPosition(Vector2Int gridOrigin, int width, int height, float nodeSize)
@@ -309,29 +472,27 @@ public class BuildingManager : MonoBehaviour
 
     public void OnBuildingDestroyed(BuildingHealth buildingHealth)
     {
-        if (buildingHealth == null)
-        {
-            Debug.LogWarning("BuildingManager: Tried to handle destroyed building but received null reference.");
-            return;
-        }
+        if (buildingHealth == null) return;
 
         GameObject destroyedGO = buildingHealth.gameObject;
-        int index = placedBuildings.FindIndex(info => info.Building == destroyedGO);
+        int index = placedBuildings.FindIndex(buildInfo => buildInfo.Building == destroyedGO);
 
         if (index >= 0)
         {
-            PlacedBuildingInfo info = placedBuildings[index];
-
-            MarkGridNodesUnoccupied(info.BaseGridPosition.x, info.BaseGridPosition.y, info.Width, info.Height);
+            PlacedBuildingInfo buildInfo = placedBuildings[index];
+            MarkGridNodesUnoccupied(buildInfo.BaseGridPosition.x, buildInfo.BaseGridPosition.y, buildInfo.Width, buildInfo.Height);
             placedBuildings.RemoveAt(index);
 
-            BuildingType bt = destroyedGO.GetComponent<BuildingType>();
-            if (bt != null && bt.buildingSettings != null)
+            BuildingType buildType = destroyedGO.GetComponent<BuildingType>();
+            if (buildType != null && buildType.buildingSettings != null)
             {
-                string name = bt.buildingSettings.BuildingName;
+                string name = buildType.buildingSettings.BuildingName;
+
                 if (name == "Castle")
                 {
                     placedCastleInstance = null;
+                    Debug.Log("Castle destroyed. Game Over!");
+                    GameUiManager.Instance.TriggerGameOver();
                 }
                 else if (name == "Barracks")
                 {
@@ -343,46 +504,9 @@ public class BuildingManager : MonoBehaviour
                 }
             }
         }
-        else
-        {
-            Debug.LogWarning($"BuildingManager could not find matching building info for destroyed building {destroyedGO.name}");
-        }
+
+        UpdateFilteredBuildings();
     }
-
-
-    private void OnGUI()
-    {
-        if (!BuildModeController.Instance.IsInBuildMode)
-            return;
-
-        if (buildingPrefabs == null || buildingPrefabs.Count == 0)
-            return;
-
-        GameObject currentPrefab = buildingPrefabs[currentBuildingIndex];
-        if (currentPrefab == null)
-            return;
-
-        BuildingType buildingType = currentPrefab.GetComponent<BuildingType>();
-        string name = buildingType?.buildingSettings?.BuildingName ?? "Unknown";
-        int populationCost = buildingType?.buildingSettings?.PopulationCost ?? 0;
-
-        GUIStyle style = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 20,
-            normal = { textColor = Color.white },
-            alignment = TextAnchor.UpperCenter
-        };
-
-        float width = 400f;
-        float height = 30f;
-
-        Rect rect1 = new Rect((Screen.width - width) / 2, 10, width, height);
-        Rect rect2 = new Rect((Screen.width - width) / 2, 45, width, height);
-
-        GUI.Label(rect1, $"Placing: {name} (R to rotate)", style);
-        GUI.Label(rect2, $"Population Cost: {populationCost}", style);
-    }
-
 
     private class PlacedBuildingInfo
     {
@@ -390,5 +514,28 @@ public class BuildingManager : MonoBehaviour
         public Vector2Int BaseGridPosition;
         public int Width;
         public int Height;
+    }
+
+    public string GetCurrentBuildingName()
+    {
+        return filteredBuildingPrefabs.Count == 0 ? "None" :
+            filteredBuildingPrefabs[currentFilteredIndex]?.GetComponent<BuildingType>()?.buildingSettings?.BuildingName ?? "Unknown";
+    }
+
+    public int GetCurrentPopulationCost()
+    {
+        return filteredBuildingPrefabs.Count == 0 ? 0 :
+            filteredBuildingPrefabs[currentFilteredIndex]?.GetComponent<BuildingType>()?.buildingSettings?.PopulationCost ?? 0;
+    }
+
+    public int GetCurrentGoldCost()
+    {
+        return filteredBuildingPrefabs.Count == 0 ? 0 :
+            filteredBuildingPrefabs[currentFilteredIndex]?.GetComponent<BuildingType>()?.buildingSettings?.GoldCost ?? 0;
+    }
+
+    private void NotifyUIUpdate()
+    {
+        guiManager.UpdateBuildingPreviewUI();
     }
 }

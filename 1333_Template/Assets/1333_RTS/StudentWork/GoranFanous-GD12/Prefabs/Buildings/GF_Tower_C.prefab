@@ -61,8 +61,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackRadius: 5
-  attackCooldownSeconds: 1
+  attackCooldown: 1
   damagePerAttack: 10
+  arrowPrefab: {fileID: 5188163335265927670, guid: db656ac9d0f4e63448596f27ce625762, type: 3}
+  arrowSpeed: 10
 --- !u!114 &-7085466392101480535
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75,8 +77,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 613d4d2e9b908ff41ab93c2deaad21fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buildingConfig: {fileID: 11400000, guid: 5554eb1fe1c8dda46bdbb7ed72b5201a, type: 2}
-  ownerArmyType: 0
+  OwnerArmyType: 0
+  BuildingConfig: {fileID: 11400000, guid: 5554eb1fe1c8dda46bdbb7ed72b5201a, type: 2}
+  CurrentHitPoints: 0
 --- !u!1001 &697827405710379460
 PrefabInstance:
   m_ObjectHideFlags: 0

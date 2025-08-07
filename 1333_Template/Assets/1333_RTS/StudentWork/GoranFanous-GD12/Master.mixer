@@ -43,7 +43,15 @@ AudioMixerController:
   m_SuspendThreshold: -80
   m_EnableSuspend: 1
   m_UpdateMode: 0
-  m_ExposedParameters: []
+  m_ExposedParameters:
+  - guid: d4563ae44aa37d34f898e8db6e4c3d8b
+    name: AmbienceVolume
+  - guid: b706d5956d3af954d8f672457e52cf7f
+    name: MasterVolume
+  - guid: e458e41981e725f40bf0bdd07c047555
+    name: MusicVolume
+  - guid: a84b27b7566329d45bb970d0070857cf
+    name: SFXVolume
   m_AudioMixerGroupViews:
   - guids:
     - e2cfe0c4c5b85264baf858fd710c1ca3
@@ -99,10 +107,10 @@ AudioMixerSnapshotController:
   m_AudioMixer: {fileID: 24100000}
   m_SnapshotID: 66b4b6689b8a09f469659d5b22579e70
   m_FloatValues:
-    d4563ae44aa37d34f898e8db6e4c3d8b: -80
+    d4563ae44aa37d34f898e8db6e4c3d8b: 0.10800299
     b706d5956d3af954d8f672457e52cf7f: -0.022232506
-    a84b27b7566329d45bb970d0070857cf: 3.1596465
-    e458e41981e725f40bf0bdd07c047555: -80
+    a84b27b7566329d45bb970d0070857cf: 0.33681777
+    e458e41981e725f40bf0bdd07c047555: -0.018436253
   m_TransitionOverrides: {}
 --- !u!243 &821479948679170315
 AudioMixerGroupController:
@@ -110,7 +118,7 @@ AudioMixerGroupController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Ambience
+  m_Name: AmbienceVolume
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: 7e67135c91de4d1498277a35ccb34723
   m_Children: []
@@ -129,7 +137,7 @@ AudioMixerGroupController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SFX
+  m_Name: SFXVolume
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: c14f15481c5d35143afe0b612944cfea
   m_Children: []
@@ -148,7 +156,7 @@ AudioMixerGroupController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Music
+  m_Name: MusicVolume
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: bce85c8f927b9fb4c9706ae12413fb6f
   m_Children: []

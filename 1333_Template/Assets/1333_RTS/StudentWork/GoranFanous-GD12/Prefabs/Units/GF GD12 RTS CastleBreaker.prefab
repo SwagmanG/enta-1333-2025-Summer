@@ -4604,6 +4604,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   armyType: 1
   unitType: {fileID: 11400000, guid: 8516c129390964c4da4b0463dabded18, type: 2}
+  AstarPathfinding: {fileID: -7583936305926667189}
 --- !u!114 &-7239040496230049007
 MonoBehaviour:
   m_ObjectHideFlags: 0

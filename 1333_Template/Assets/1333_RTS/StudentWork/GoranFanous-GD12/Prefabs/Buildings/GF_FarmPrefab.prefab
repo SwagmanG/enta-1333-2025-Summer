@@ -46,8 +46,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 613d4d2e9b908ff41ab93c2deaad21fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buildingConfig: {fileID: 11400000, guid: 6c87cc85e9607f740a66e43ceaaadb3d, type: 2}
-  ownerArmyType: 0
+  OwnerArmyType: 0
+  BuildingConfig: {fileID: 11400000, guid: 6c87cc85e9607f740a66e43ceaaadb3d, type: 2}
+  CurrentHitPoints: 0
 --- !u!114 &-5810869540219180100
 MonoBehaviour:
   m_ObjectHideFlags: 0

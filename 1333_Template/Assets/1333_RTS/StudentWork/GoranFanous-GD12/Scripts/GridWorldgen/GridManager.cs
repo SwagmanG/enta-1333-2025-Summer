@@ -289,6 +289,35 @@ public class GridManager : MonoBehaviour
         return GetNode(coords.x, coords.y);
     }
 
+    public List<GridNode> GetNeighbors(GridNode node)
+    {
+        List<GridNode> neighbors = new List<GridNode>();
+
+        if (node == null) return neighbors;
+
+        Vector2Int gridPos = GetGridPosFromWorld(node.WorldPosition);
+
+        // Directions including only cardinal (up, right, down, left)
+        int[,] directions = new int[,] {
+        { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 }
+    };
+
+        for (int i = 0; i < directions.GetLength(0); i++)
+        {
+            int nx = gridPos.x + directions[i, 0];
+            int ny = gridPos.y + directions[i, 1];
+
+            GridNode neighbor = GetNode(nx, ny);
+            if (neighbor != null)
+            {
+                neighbors.Add(neighbor);
+            }
+        }
+
+        return neighbors;
+    }
+
+
     private void OnDrawGizmos()
     {
         if (gridNodes == null || gridSettings == null) return;

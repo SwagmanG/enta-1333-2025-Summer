@@ -13,6 +13,7 @@ public class GridNode
     public Vector3 WorldPosition;
     // Whether or not this node is walkable (i.e., can a unit move through it)
     public bool Walkable;
+    public bool BuildingOccupied;
     // Optional additional weight or movement cost of this node (can represent terrain difficulty)
     public int Weight;
     // Cost from the start node to this node (G cost in A* pathfinding)

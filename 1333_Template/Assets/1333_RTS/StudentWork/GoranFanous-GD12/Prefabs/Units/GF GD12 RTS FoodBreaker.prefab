@@ -9081,7 +9081,7 @@ Animator:
   m_GameObject: {fileID: 155132}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 39164aad5a45b6e4fb8eec7201d8f0ad, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
@@ -9132,6 +9132,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   armyType: 1
   unitType: {fileID: 11400000, guid: 40318240a8284fa468156180d6e0ffc3, type: 2}
+  AstarPathfinding: {fileID: -7913304579540136578}
 --- !u!1 &156456
 GameObject:
   m_ObjectHideFlags: 0

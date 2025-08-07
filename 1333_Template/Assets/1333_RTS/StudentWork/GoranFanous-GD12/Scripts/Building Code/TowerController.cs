@@ -1,38 +1,35 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using RTS_1333; // Assuming UnitType and AttackType are defined in this namespace
+using RTS_1333;
 
-/// <summary>
-/// Controls tower behavior, including scanning for nearby enemy units within a radius,
-/// targeting one at a time, and damaging them over time. Only towers can kill enemies.
-/// </summary>
 public class TowerController : MonoBehaviour
 {
     [Header("Tower Configuration")]
-    [SerializeField] private float attackRadius = 5f;                 // Attack radius in world units
-    [SerializeField] private float attackCooldownSeconds = 1f;        // Time delay between consecutive attacks in seconds
+    [SerializeField] private float attackRadius = 5f;                 // Attack radius (Node Units) 
+    [SerializeField] private float attackCooldown = 1f;               // Attack Cooldown
     [SerializeField] private int damagePerAttack = 10;                // Amount of damage dealt per attack
+
+    [Header("Arrow Settings")]
+    [SerializeField] private GameObject arrowPrefab;                   // Arrow prefab to instantiate
+    [SerializeField] private float arrowSpeed = 10f;                   // Speed at which arrow flies
 
     private GridManager gridManagerInstance;                          // Reference to the GridManager instance to access the grid
     private UnitController currentAttackTarget;                       // The currently targeted enemy unit
-    private float attackCooldownTimer = 0f;                           // Timer to track time elapsed since last attack
+    private float attackCooldownTimer = 0f;                           // Timer to track time passed since last attack
 
     private void Awake()
     {
+        // Referencing the gridmanager via FindObject because the tower is a prefab.
         if (gridManagerInstance == null)
         {
             gridManagerInstance = FindFirstObjectByType<GridManager>();
-            if (gridManagerInstance == null)
-            {
-                Debug.LogError("TowerController: GridManager not found in scene!");
-            }
         }
     }
 
     private void Update()
     {
-        // Update the cooldown timer by the time elapsed since last frame
+        // Update the cooldown timer by the time passed since last frame
         attackCooldownTimer += Time.deltaTime;
 
         // If no valid target or target is out of range or destroyed, find a new one
@@ -41,18 +38,16 @@ public class TowerController : MonoBehaviour
             currentAttackTarget = FindClosestEnemyWithinRange();
         }
 
-        // If there is a target and the attack cooldown has elapsed, attack
-        if (currentAttackTarget != null && attackCooldownTimer >= attackCooldownSeconds)
+        // If there is a target and the attack cooldown has passed then attack
+        if (currentAttackTarget != null && attackCooldownTimer >= attackCooldown)
         {
-            Attack(currentAttackTarget);
+            ShootArrowAt(currentAttackTarget);
             attackCooldownTimer = 0f; // Reset cooldown timer after attacking
         }
     }
 
-    /// <summary>
-    /// Finds the closest enemy unit within the tower's attack radius, prioritizing TowerBreakers.
-    /// </summary>
-    /// <returns>The nearest enemy UnitController, or null if none in range.</returns>
+    // Finds the closest enemy unit in range.
+    // Prioritizes TowerBreakers.
     private UnitController FindClosestEnemyWithinRange()
     {
         UnitController[] allUnits = GameObject.FindObjectsByType<UnitController>(FindObjectsSortMode.None);
@@ -89,9 +84,7 @@ public class TowerController : MonoBehaviour
         return nearestTowerBreaker != null ? nearestTowerBreaker : nearestEnemyUnit;
     }
 
-    /// <summary>
-    /// Checks if the specified unit is still a valid attack target (exists, alive, and in range).
-    /// </summary>
+    // Checks if the specified unit is still a valid attack target (exists, alive, and in range.
     private bool IsTargetValid(UnitController unit)
     {
         if (unit == null) return false;
@@ -100,20 +93,55 @@ public class TowerController : MonoBehaviour
         return distanceToUnit <= attackRadius && unit.armyType == ArmyType.Enemy;
     }
 
-    /// <summary>
-    /// Applies damage to the targeted enemy unit and draws a debug line to show the attack.
-    /// </summary>
-    private void Attack(UnitController enemyUnit)
+    // Shoots an arrow towards the enemy unit
+    private void ShootArrowAt(UnitController enemyUnit)
     {
-        if (enemyUnit == null) return;
+        if (enemyUnit == null || arrowPrefab == null) return;
 
-        enemyUnit.TakeDamage(damagePerAttack);
-        Debug.DrawLine(transform.position + Vector3.up * 1f, enemyUnit.transform.position + Vector3.up * 1f, Color.red, 0.2f);
+        // Instantiate arrow at tower's position (with a bit of vertical offset if needed)
+        Vector3 spawnPos = transform.position + Vector3.up * 1f; // adjust Y offset as needed
+        GameObject arrowInstance = Instantiate(arrowPrefab, spawnPos, Quaternion.identity);
+
+        // Start the arrow movement coroutine
+        StartCoroutine(MoveArrowToTarget(arrowInstance, enemyUnit));
     }
 
-    /// <summary>
-    /// Draw Gizmos in the Scene view to visualize tower's attack radius and current target.
-    /// </summary>
+    private IEnumerator MoveArrowToTarget(GameObject arrow, UnitController target)
+    {
+        if (arrow == null || target == null)
+            yield break;
+
+        while (arrow != null && target != null)
+        {
+            Vector3 targetPos = target.transform.position + Vector3.up * 1f; // aim for center height of target
+            Vector3 direction = (targetPos - arrow.transform.position).normalized;
+
+            // Rotate arrow to face the target position
+            arrow.transform.LookAt(targetPos);
+            
+
+            // Move arrow toward target
+            arrow.transform.position += direction * arrowSpeed * Time.deltaTime;
+
+            // Check distance to target
+            if (Vector3.Distance(arrow.transform.position, targetPos) < 0.2f)
+            {
+                // Deal damage and destroy arrow
+                target.TakeDamage(damagePerAttack);
+                Destroy(arrow);
+                yield break;
+            }
+
+            yield return null;
+        }
+
+
+        // If arrow or target gets destroyed before impact, clean up arrow if needed
+        if (arrow != null)
+            Destroy(arrow);
+    }
+
+    // Draw Gizmos in the Scene view to visualize tower's attack radius and current target.
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;

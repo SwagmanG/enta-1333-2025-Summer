@@ -4,19 +4,21 @@ using UnityEngine;
 
 public class BuildModeController : MonoBehaviour
 {
-    public static BuildModeController Instance { get; private set; }
+    public static BuildModeController BMCInstance { get; private set; }
+
+    public GameUiManager uiManager;
 
     public bool IsInBuildMode { get; private set; } = false;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (BMCInstance != null && BMCInstance != this)
         {
             Destroy(this);
         }
         else
         {
-            Instance = this;
+            BMCInstance = this;
         }
     }
 
@@ -27,9 +29,15 @@ public class BuildModeController : MonoBehaviour
             IsInBuildMode = !IsInBuildMode;
             Debug.Log("Build Mode: " + (IsInBuildMode ? "Enabled" : "Disabled"));
 
-            //  Play build mode toggle sound (same for enter and exit)
+            // Play build mode toggle sound
             AudioManager.Instance?.PlaySFX("Enter/Exit Buildmode");
             Debug.LogWarning("buildmode sound");
+
+            // Show or hide the build panel based on the build mode state
+            if (IsInBuildMode)
+                uiManager.ShowBuildUI();
+            else
+                uiManager.HideBuildUI();
         }
     }
 }

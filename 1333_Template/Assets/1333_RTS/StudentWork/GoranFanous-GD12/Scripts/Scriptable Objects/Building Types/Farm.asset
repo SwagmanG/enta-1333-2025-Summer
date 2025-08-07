@@ -17,4 +17,9 @@ MonoBehaviour:
   buildingSizeY: 4
   buildScale: 0.6
   maxHealth: 20
-  currentHealth: 20
+  PopulationCost: 4
+  FoodTax: 4
+  GoldCost: 25
+  GoldMod: 1
+  PopulationMod: 1
+  FoodMod: 3

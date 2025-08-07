@@ -6,7 +6,7 @@ public class AstarPathfinding : MonoBehaviour
 {
     public static AstarPathfinding Instance { get; private set; }
 
-    [SerializeField] private float stepDelaySeconds = 0.05f;
+    [SerializeField] private float stepDelaySeconds = 0.01f;
 
     private GridManager gridManager;
 
@@ -17,25 +17,31 @@ public class AstarPathfinding : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-            return;
-
         Instance = this;
+        Debug.Log("AstarPathfinding: Instance set.");
 
         if (gridManager == null)
             gridManager = FindFirstObjectByType<GridManager>();
 
         if (gridManager == null)
-            Debug.LogError("GridManager not found in the scene!");
+            Debug.LogError("AstarPathfinding: GridManager not found in the scene!");
+        else
+            Debug.Log("AstarPathfinding: GridManager found.");
     }
 
     public void RequestPathfinding(Vector3 startWorldPos, Vector3 goalWorldPos, UnitController requestingUnit)
     {
-        if (requestingUnit == null) return;
+        if (requestingUnit == null)
+        {
+            Debug.LogWarning("AstarPathfinding: Requesting unit is null.");
+            return;
+        }
 
-        // Cancel any existing pathfinding for this unit
+        Debug.Log($"RequestPathfinding: Request received from unit {requestingUnit.name} from {startWorldPos} to {goalWorldPos}");
+
         if (activePathCoroutines.TryGetValue(requestingUnit, out Coroutine existingCoroutine) && existingCoroutine != null)
         {
+            Debug.Log("RequestPathfinding: Stopping existing pathfinding coroutine for unit.");
             StopCoroutine(existingCoroutine);
         }
 
@@ -45,111 +51,158 @@ public class AstarPathfinding : MonoBehaviour
 
     private IEnumerator FindPathCoroutine(Vector3 startWorldPos, Vector3 goalWorldPos, UnitController unit)
     {
+        Debug.Log($"FindPathCoroutine: Starting pathfinding for unit {unit.name}.");
+
         Vector2Int startGridPos = gridManager.GetGridPosFromWorld(startWorldPos);
         Vector2Int goalGridPos = gridManager.GetGridPosFromWorld(goalWorldPos);
+
+        Debug.Log($"FindPathCoroutine: Start grid pos: {startGridPos}, Goal grid pos: {goalGridPos}");
 
         GridNode startNode = gridManager.GetNode(startGridPos.x, startGridPos.y);
         GridNode goalNode = gridManager.GetNode(goalGridPos.x, goalGridPos.y);
 
         if (startNode == null || goalNode == null)
         {
-            Debug.LogWarning("AstarPathfinding: Start or goal node is invalid.");
+            Debug.LogWarning("FindPathCoroutine: Start or goal node invalid.");
             activePathCoroutines.Remove(unit);
             yield break;
         }
 
-        if (gridManager.IsOccupied(goalNode))
+        if (!goalNode.Walkable || gridManager.IsOccupied(goalNode))
         {
-            List<GridNode> alternativeGoals = gridManager.GetWalkableNeighbors(goalNode, unit);
-            if (alternativeGoals.Count == 0)
+            Debug.Log("FindPathCoroutine: Goal node blocked or occupied, searching for adjacent walkable nodes.");
+
+            List<GridNode> buildingNodes = GetBuildingFootprintNodes(goalNode);
+
+            List<GridNode> candidateGoalNodes = new List<GridNode>();
+            foreach (var buildingNode in buildingNodes)
             {
-                Debug.LogWarning("AstarPathfinding: Goal and neighbors are occupied.");
+                foreach (var neighbor in gridManager.GetWalkableNeighbors(buildingNode, unit))
+                {
+                    if (!candidateGoalNodes.Contains(neighbor) && !gridManager.IsOccupied(neighbor))
+                    {
+                        candidateGoalNodes.Add(neighbor);
+                        Debug.Log($"FindPathCoroutine: Candidate node added at {neighbor.WorldPosition}");
+                    }
+                }
+            }
+
+            if (candidateGoalNodes.Count == 0)
+            {
+                Debug.LogWarning("FindPathCoroutine: No walkable adjacent nodes found around building.");
                 activePathCoroutines.Remove(unit);
                 yield break;
             }
 
-            goalNode = FindClosestNodeToPosition(alternativeGoals, startNode.WorldPosition);
+            goalNode = FindClosestNodeToPosition(candidateGoalNodes, startNode.WorldPosition);
+            Debug.Log($"FindPathCoroutine: New goal node selected at {goalNode.WorldPosition}");
         }
 
         bool isStartNodeBlocked = !startNode.Walkable || (gridManager.IsOccupied(startNode) && !IsNodeOccupiedByUnit(startNode, unit));
         if (isStartNodeBlocked)
         {
-            Debug.LogWarning("AstarPathfinding: Start node is blocked.");
+            Debug.LogWarning("FindPathCoroutine: Start node is blocked.");
             activePathCoroutines.Remove(unit);
             yield break;
         }
 
-        Dictionary<GridNode, (int GCost, int HCost, int FCost, Vector3 CameFromWorldPos)> nodeCostMap = new();
-        foreach (GridNode node in gridManager.gridNodes)
+        Dictionary<GridNode, (int GCost, int HCost, int FCost, Vector3 CameFromWorldPos)> costMap = new();
+        foreach (var node in gridManager.gridNodes)
         {
-            nodeCostMap[node] = (int.MaxValue, int.MaxValue, int.MaxValue, Vector3.zero);
+            costMap[node] = (int.MaxValue, int.MaxValue, int.MaxValue, Vector3.zero);
         }
 
-        int startHeuristic = CalculateHeuristic(startNode, goalNode);
-        nodeCostMap[startNode] = (0, startHeuristic, startHeuristic, Vector3.zero);
+        int initialHeuristic = CalculateHeuristic(startNode, goalNode);
+        costMap[startNode] = (0, initialHeuristic, initialHeuristic, Vector3.zero);
 
         List<GridNode> openSet = new() { startNode };
         HashSet<GridNode> closedSet = new();
 
         while (openSet.Count > 0)
         {
-            GridNode currentNode = GetNodeWithLowestFCost(openSet, nodeCostMap);
+            GridNode currentNode = GetNodeWithLowestFCost(openSet, costMap);
 
             if (currentNode == goalNode)
             {
-                List<GridNode> finalPath = ReconstructPath(startNode, goalNode, nodeCostMap);
-                unit.FollowPath(finalPath);
+                Debug.Log("FindPathCoroutine: Goal node reached, reconstructing path.");
+                List<GridNode> finalPath = ReconstructPath(startNode, goalNode, costMap);
+                unit.OnPathFound(finalPath);
                 activePathCoroutines.Remove(unit);
                 yield break;
             }
 
+
             openSet.Remove(currentNode);
             closedSet.Add(currentNode);
 
-            foreach (GridNode neighbor in gridManager.GetWalkableNeighbors(currentNode, unit))
+            foreach (var neighbor in gridManager.GetWalkableNeighbors(currentNode, unit))
             {
-                if (closedSet.Contains(neighbor)) continue;
+                if (closedSet.Contains(neighbor))
+                    continue;
 
-                int tentativeGCost = nodeCostMap[currentNode].GCost + neighbor.TerrainTypes.MovementCost;
+                int tentativeGCost = costMap[currentNode].GCost + neighbor.TerrainTypes.MovementCost;
 
-                if (tentativeGCost < nodeCostMap[neighbor].GCost)
+                if (tentativeGCost < costMap[neighbor].GCost)
                 {
                     int heuristic = CalculateHeuristic(neighbor, goalNode);
-                    nodeCostMap[neighbor] = (
-                        tentativeGCost,
-                        heuristic,
-                        tentativeGCost + heuristic,
-                        currentNode.WorldPosition
-                    );
+                    costMap[neighbor] = (tentativeGCost, heuristic, tentativeGCost + heuristic, currentNode.WorldPosition);
 
                     if (!openSet.Contains(neighbor))
+                    {
                         openSet.Add(neighbor);
+                    }
                 }
             }
 
             yield return new WaitForSeconds(stepDelaySeconds);
         }
 
-        Debug.LogWarning("AstarPathfinding: No path found.");
+        Debug.LogWarning("FindPathCoroutine: No path found.");
         activePathCoroutines.Remove(unit);
     }
 
-    private GridNode FindClosestNodeToPosition(List<GridNode> nodeList, Vector3 targetPos)
+    private List<GridNode> GetBuildingFootprintNodes(GridNode startNode)
     {
-        GridNode closestNode = null;
-        float shortestDistance = float.MaxValue;
+        List<GridNode> footprintNodes = new();
+        HashSet<GridNode> visited = new();
+        Queue<GridNode> queue = new();
+        queue.Enqueue(startNode);
+        visited.Add(startNode);
 
-        foreach (GridNode node in nodeList)
+        while (queue.Count > 0)
         {
-            float distance = Vector3.Distance(node.WorldPosition, targetPos);
-            if (distance < shortestDistance)
+            var current = queue.Dequeue();
+            footprintNodes.Add(current);
+
+            foreach (var neighbor in gridManager.GetNeighbors(current))
             {
-                shortestDistance = distance;
-                closestNode = node;
+                if (!visited.Contains(neighbor) && !neighbor.Walkable)
+                {
+                    visited.Add(neighbor);
+                    queue.Enqueue(neighbor);
+                }
             }
         }
 
-        return closestNode;
+        return footprintNodes;
+    }
+
+    private GridNode FindClosestNodeToPosition(List<GridNode> nodes, Vector3 pos)
+    {
+        GridNode closest = null;
+        float minDist = float.MaxValue;
+
+        foreach (var node in nodes)
+        {
+            float dist = Vector3.Distance(node.WorldPosition, pos);
+            if (dist < minDist)
+            {
+                minDist = dist;
+                closest = node;
+            }
+        }
+
+        return closest;
     }
 
     private bool IsNodeOccupiedByUnit(GridNode node, UnitController unit)
@@ -164,10 +217,10 @@ public class AstarPathfinding : MonoBehaviour
         Vector2Int fromPos = gridManager.GetGridPosFromWorld(from.WorldPosition);
         Vector2Int toPos = gridManager.GetGridPosFromWorld(to.WorldPosition);
 
-        int deltaX = Mathf.Abs(fromPos.x - toPos.x);
-        int deltaY = Mathf.Abs(fromPos.y - toPos.y);
+        int dx = Mathf.Abs(fromPos.x - toPos.x);
+        int dy = Mathf.Abs(fromPos.y - toPos.y);
 
-        return (deltaX + deltaY) * 5; // Manhattan Distance * weight
+        return (dx + dy) * 5;
     }
 
     private List<GridNode> ReconstructPath(GridNode startNode, GridNode goalNode, Dictionary<GridNode, (int GCost, int HCost, int FCost, Vector3 CameFromWorldPos)> costMap)
@@ -184,25 +237,27 @@ public class AstarPathfinding : MonoBehaviour
 
         path.Add(startNode);
         path.Reverse();
+
         return path;
     }
 
     private GridNode GetNodeWithLowestFCost(List<GridNode> nodes, Dictionary<GridNode, (int GCost, int HCost, int FCost, Vector3 CameFromWorldPos)> costMap)
     {
-        GridNode lowestFCostNode = nodes[0];
+        GridNode bestNode = nodes[0];
+        var bestCost = costMap[bestNode];
 
         for (int i = 1; i < nodes.Count; i++)
         {
-            GridNode node = nodes[i];
-            var currentCost = costMap[node];
-            var bestCost = costMap[lowestFCostNode];
+            var node = nodes[i];
+            var cost = costMap[node];
 
-            if (currentCost.FCost < bestCost.FCost || (currentCost.FCost == bestCost.FCost && currentCost.HCost < bestCost.HCost))
+            if (cost.FCost < bestCost.FCost || (cost.FCost == bestCost.FCost && cost.HCost < bestCost.HCost))
             {
-                lowestFCostNode = node;
+                bestNode = node;
+                bestCost = cost;
             }
         }
 
-        return lowestFCostNode;
+        return bestNode;
     }
 }

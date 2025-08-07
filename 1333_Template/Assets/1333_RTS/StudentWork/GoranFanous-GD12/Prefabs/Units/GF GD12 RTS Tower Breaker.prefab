@@ -10257,7 +10257,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   armyType: 1
   unitType: {fileID: 11400000, guid: c8cdf516c8c70814a993950391c7f732, type: 2}
-  attackCooldown: 1
+  AstarPathfinding: {fileID: -7874876558852245773}
 --- !u!114 &3778840018290409039
 MonoBehaviour:
   m_ObjectHideFlags: 0

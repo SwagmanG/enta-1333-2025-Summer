@@ -35,10 +35,6 @@ public class GameManager : MonoBehaviour
     {
        
 
-        // Press Escape to return to Main Menu
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            SceneManager.LoadScene(0);
-        }
+        
     }
 }
