@@ -22,13 +22,13 @@ public class AudioManager : MonoBehaviour
     public bool musicEnabled = true;
     public bool ambienceEnabled = true;
 
-    public static AudioManager Instance;
+    public static AudioManager AMInstance;
 
     void Awake()
     {
-        if (Instance == null)
+        if (AMInstance == null)
         {
-            Instance = this;
+            AMInstance = this;
             DontDestroyOnLoad(gameObject);
         }
         else
