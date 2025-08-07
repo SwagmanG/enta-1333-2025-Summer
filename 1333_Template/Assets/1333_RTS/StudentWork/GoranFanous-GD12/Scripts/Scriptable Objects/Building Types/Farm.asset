@@ -20,6 +20,6 @@ MonoBehaviour:
   PopulationCost: 4
   FoodTax: 4
   GoldCost: 25
-  GoldMod: 1
+  GoldMod: 2
   PopulationMod: 1
-  FoodMod: 3
+  FoodMod: 5

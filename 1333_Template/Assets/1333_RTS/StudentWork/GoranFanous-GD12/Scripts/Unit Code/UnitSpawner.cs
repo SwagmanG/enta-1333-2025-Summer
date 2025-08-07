@@ -19,7 +19,7 @@ public class UnitSpawner : MonoBehaviour
     [SerializeField] private float waveCountMultiplier = 1.2f; // How much enemy count increases each wave
     [SerializeField] private List<int> baseEnemyCounts;       // Starting count for each enemy type
 
-  
+
     // Internal state tracking for the wave system
     private int currentWave = 0;           // Which wave we're currently on
     private Camera mainCamera;             // Reference to main camera
@@ -69,7 +69,7 @@ public class UnitSpawner : MonoBehaviour
         if (waveCoroutine != null)
             StopCoroutine(waveCoroutine);
 
-        waveCoroutine = StartCoroutine(CountdownToNextWave(currentWave)); // auto-start countdown
+        waveCoroutine = StartCoroutine(SpawnWaves(currentWave));
     }
 
 
@@ -85,29 +85,15 @@ public class UnitSpawner : MonoBehaviour
         while (!canSpawnWave)
             yield return null;
 
-        // Spawn each wave in sequence
-        while (currentWave < numberOfWaves)
+        // Spawn the current wave
+        SpawnWave(currentWave);
+        currentWave++;
+
+        // Check if there are more waves to come
+        if (currentWave < numberOfWaves)
         {
-            // Hide the wave start button on the final wave
-            
-
-            // Spawn the current wave
-            SpawnWave(currentWave);
-            currentWave++;
-
-            // Break if we've completed all waves
-            if (currentWave >= numberOfWaves)
-                break;
-
-
-            // Start next countdown through UI Manager
-            GameUiManager.Instance.StartWaveCountdown(currentWave);
-
-            // Wait until ForceStartCurrentWave is called again
-            yield break;
-
-           
-           
+            // Start countdown for the next wave
+            waveCoroutine = StartCoroutine(CountdownToNextWave(currentWave));
         }
     }
 

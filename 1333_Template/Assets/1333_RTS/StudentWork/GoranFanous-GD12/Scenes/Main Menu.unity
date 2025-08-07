@@ -1405,7 +1405,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
       propertyPath: MusicTracks.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7817865510316583659, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
       propertyPath: AmbienceTracks.Array.size
