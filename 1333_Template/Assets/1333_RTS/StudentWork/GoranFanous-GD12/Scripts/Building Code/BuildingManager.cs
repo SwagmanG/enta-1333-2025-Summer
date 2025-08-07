@@ -319,10 +319,10 @@ public class BuildingManager : MonoBehaviour
 
     private bool CanPlaceBuildingAt(int startX, int startY, int width, int height)
     {
-        int checkStartX = startX - 1;
-        int checkStartY = startY - 1;
-        int checkEndX = startX + width;
-        int checkEndY = startY + height;
+        int checkStartX = startX;
+        int checkStartY = startY;
+        int checkEndX = startX + width - 1;
+        int checkEndY = startY + height - 1;
 
         for (int x = checkStartX; x <= checkEndX; x++)
         {
@@ -409,10 +409,10 @@ public class BuildingManager : MonoBehaviour
         }
 
         // Clear adjacent border nodes if no other buildings occupy them
-        int borderStartX = startX - 1;
-        int borderStartY = startY - 1;
-        int borderEndX = startX + width;
-        int borderEndY = startY + height;
+        int borderStartX = startX;
+        int borderStartY = startY;
+        int borderEndX = startX + width - 1;
+        int borderEndY = startY + height - 1;
 
         for (int x = borderStartX; x <= borderEndX; x++)
         {
