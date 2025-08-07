@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c0ece16dc27bbf4bb55bf145f259993, type: 3}
   m_Name: CastleBreaker
   m_EditorClassIdentifier: 
-  _width: 1
-  _height: 1
-  _maxHp: 100
-  _moveSpeed: 1
-  _damage: 10
-  _defence: 1
-  _attackType: 1
-  _range: 3
-  _attackSpeed: 1
+  width: 1
+  height: 1
+  maxHp: 1
+  moveSpeed: 1
+  damage: 1
+  defence: 1
+  attackType: 1
+  range: 1
+  attackSpeed: 1

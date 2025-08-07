@@ -7,12 +7,13 @@ public class MainMenuManager : MonoBehaviour
 {
     public void PlayGame()
     {
-        //SceneManager.LoadSceneAsync(1);
-        LoadingScreenManager.loadInstance.SwitchToScene(1);
+        //Calls the loading for the main game scene.
+        LoadingScreenManager.LoadInstance.SwitchToScene(1);
     }
 
     public void QuitGame()
     {
+        //Quits the game, only works in builds.
         Application.Quit();
     }
 }

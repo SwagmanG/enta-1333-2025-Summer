@@ -107,7 +107,7 @@ public class AstarPathfinding : MonoBehaviour
         }
 
         Dictionary<GridNode, (int GCost, int HCost, int FCost, Vector3 CameFromWorldPos)> costMap = new();
-        foreach (var node in gridManager.gridNodes)
+        foreach (var node in gridManager.GridNodes)
         {
             costMap[node] = (int.MaxValue, int.MaxValue, int.MaxValue, Vector3.zero);
         }

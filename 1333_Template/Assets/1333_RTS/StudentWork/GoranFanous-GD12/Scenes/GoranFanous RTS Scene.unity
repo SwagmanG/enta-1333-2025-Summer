@@ -1454,15 +1454,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6467109331d4ca8428c005267aec15a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buildPanel: {fileID: 1744353805}
-  buildingNameText: {fileID: 589450289}
-  controlsText: {fileID: 874804088}
-  costText: {fileID: 1512677360}
-  populationText: {fileID: 821004445}
-  goldText: {fileID: 6835149}
-  foodText: {fileID: 1481893732}
+  BuildPanel: {fileID: 1744353805}
+  BuildingNameText: {fileID: 589450289}
+  ControlsText: {fileID: 874804088}
+  CostText: {fileID: 1512677360}
+  PopulationText: {fileID: 821004445}
+  GoldText: {fileID: 6835149}
+  FoodText: {fileID: 1481893732}
   audioSliderPanel: {fileID: 1322995110}
   audioMixer: {fileID: 24100000, guid: 517be2c3c8d992448942d23fe14984b5, type: 2}
+  gameOverOverlay: {fileID: 0}
+  victoryOverlay: {fileID: 0}
 --- !u!1 &589450286
 GameObject:
   m_ObjectHideFlags: 0
@@ -2687,7 +2689,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 156156d14429c9f44a2aa8a35971de49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiManager: {fileID: 583661001}
+  UIManager: {fileID: 583661001}
 --- !u!1 &1025452614
 GameObject:
   m_ObjectHideFlags: 0
@@ -4160,9 +4162,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 144d417e2f3c56f48a8e9b331b1bc323, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pauseMenuUI: {fileID: 755215348}
-  pauseButton: {fileID: 833534954}
-  audioPanel: {fileID: 1322995110}
+  PauseMenuUI: {fileID: 755215348}
+  PauseButton: {fileID: 833534954}
+  AudioPanel: {fileID: 1322995110}
 --- !u!1 &1622157617
 GameObject:
   m_ObjectHideFlags: 0
@@ -5124,16 +5126,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a682cc5f2c33911478f254161b52da56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyUnitPrefabs:
-  - {fileID: 155500, guid: b38ee3f463328244087f85131133e0e7, type: 3}
-  - {fileID: 123088, guid: 0755a95e2e1b5f44e8226989fb76f2cf, type: 3}
+  EnemyUnitPrefabs:
   - {fileID: 155132, guid: bcc60fdbd3a37b44cbc0cb99db483477, type: 3}
-  gridManager: {fileID: 1915770509}
-  numberOfWaves: 5
-  timeBetweenWaves: 65
-  waveCountMultiplier: 1.2
-  baseEnemyCounts: 080000000a0000000f000000
-  waveStartButton: {fileID: 848751224}
+  - {fileID: 123088, guid: 0755a95e2e1b5f44e8226989fb76f2cf, type: 3}
+  - {fileID: 155500, guid: b38ee3f463328244087f85131133e0e7, type: 3}
+  GridManager: {fileID: 1915770509}
+  NumberOfWaves: 5
+  TimeBetweenWaves: 10
+  WaveCountMultiplier: 1.2
+  BaseEnemyCounts: 
+  WaveStartButton: {fileID: 848751224}
 --- !u!4 &1898601105
 Transform:
   m_ObjectHideFlags: 0
@@ -5545,6 +5547,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3083739378104149723, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: m_Resource
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3083739378104149723, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
+      propertyPath: m_audioClip
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 8061233094854099030, guid: 74cca98df7160204d95c957a6d6e4f35, type: 3}
       propertyPath: m_Name
       value: AudioManager
@@ -5607,9 +5617,17 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7676801803712162168, guid: 6a61ef6fe0a03af4190475623ef8368a, type: 3}
+      propertyPath: GuiManager
+      value: 
+      objectReference: {fileID: 583661001}
+    - target: {fileID: 7676801803712162168, guid: 6a61ef6fe0a03af4190475623ef8368a, type: 3}
       propertyPath: guiManager
       value: 
       objectReference: {fileID: 583661001}
+    - target: {fileID: 7676801803712162168, guid: 6a61ef6fe0a03af4190475623ef8368a, type: 3}
+      propertyPath: GridManager
+      value: 
+      objectReference: {fileID: 1915770509}
     - target: {fileID: 7676801803712162168, guid: 6a61ef6fe0a03af4190475623ef8368a, type: 3}
       propertyPath: gridManager
       value: 

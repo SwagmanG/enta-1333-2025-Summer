@@ -10255,8 +10255,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b929bcf92a62274094118c5a0cf63a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  armyType: 1
-  unitType: {fileID: 11400000, guid: c8cdf516c8c70814a993950391c7f732, type: 2}
+  ArmyType: 1
+  UnitType: {fileID: 11400000, guid: c8cdf516c8c70814a993950391c7f732, type: 2}
   AstarPathfinding: {fileID: -7874876558852245773}
 --- !u!114 &3778840018290409039
 MonoBehaviour:

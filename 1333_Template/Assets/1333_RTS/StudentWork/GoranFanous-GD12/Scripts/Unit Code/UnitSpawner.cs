@@ -5,90 +5,117 @@ using UnityEngine.UI;
 
 public class UnitSpawner : MonoBehaviour
 {
+    // Enemy unit prefabs - these are the units that will spawn during waves
     [Header("Enemy Unit Prefabs (must have UnitController with UnitType)")]
-    [SerializeField] private List<GameObject> enemyUnitPrefabs;
+    [SerializeField] private List<GameObject> EnemyUnitPrefabs;
 
+    // Reference to the grid system for spawn positioning
     [Header("Grid Manager Reference")]
-    [SerializeField] private GridManager gridManager;
+    [SerializeField] private GridManager GridManager;
 
+    // Configuration for how waves work and scale over time
     [Header("Wave Settings")]
-    [SerializeField] private int numberOfWaves = 5;
-    [SerializeField] private float timeBetweenWaves = 10f;
-    [SerializeField] private float waveCountMultiplier = 1.2f;
-    [SerializeField] private List<int> baseEnemyCounts;
+    [SerializeField] private int NumberOfWaves = 5;           // Total waves in the game
+    [SerializeField] private float TimeBetweenWaves = 10f;    // How long to wait between waves
+    [SerializeField] private float WaveCountMultiplier = 1.2f; // How much enemy count increases each wave
+    [SerializeField] private List<int> BaseEnemyCounts;       // Starting count for each enemy type
 
+    // UI element that lets players manually start waves
     [Header("UI References")]
-    [SerializeField] private Button waveStartButton;
+    [SerializeField] private Button WaveStartButton;
 
-    private int currentWave = 0;
-    private Camera mainCamera;
-    private bool canSpawnWave = false;
-    private Coroutine waveCoroutine;
-
-    private int aliveEnemies = 0;
+    // Internal state tracking for the wave system
+    private int currentWave = 0;           // Which wave we're currently on
+    private Camera mainCamera;             // Reference to main camera
+    private bool canSpawnWave = false;     // Whether we're allowed to spawn the next wave
+    private Coroutine waveCoroutine;       // Coroutine handle for wave management
+    private int aliveEnemies = 0;          // Count of enemies currently alive
 
     private void Start()
     {
+        // === INITIALIZATION ===
+        // Set up the spawner and validate configuration
+
         mainCamera = Camera.main;
 
-        if (enemyUnitPrefabs == null || enemyUnitPrefabs.Count == 0)
+        // Make sure we have enemy prefabs to spawn
+        if (EnemyUnitPrefabs == null || EnemyUnitPrefabs.Count == 0)
         {
             Debug.LogError("UnitSpawner: No enemy unit prefabs assigned!");
             enabled = false;
             return;
         }
 
-        if (baseEnemyCounts == null || baseEnemyCounts.Count != enemyUnitPrefabs.Count)
+        // Auto-generate base enemy counts if not properly configured
+        // This ensures we have a count for each enemy type
+        if (BaseEnemyCounts == null || BaseEnemyCounts.Count != EnemyUnitPrefabs.Count)
         {
-            baseEnemyCounts = new List<int>(new int[enemyUnitPrefabs.Count]);
-            for (int i = 0; i < baseEnemyCounts.Count; i++)
+            BaseEnemyCounts = new List<int>(new int[EnemyUnitPrefabs.Count]);
+            for (int i = 0; i < BaseEnemyCounts.Count; i++)
             {
-                baseEnemyCounts[i] = 1;
+                BaseEnemyCounts[i] = 1;
             }
         }
 
+        // Start the wave spawning system
         waveCoroutine = StartCoroutine(SpawnWaves());
     }
 
+    // === WAVE CONTROL METHODS ===
+    // Handle manual wave starting and management
+
+    // Allow players or other systems to force start the current wave
     public void ForceStartCurrentWave()
     {
         Debug.Log("Wave Start");
 
         if (!canSpawnWave)
         {
+            // Enable wave spawning for the first time
             canSpawnWave = true;
             Debug.Log("Force started first wave!");
         }
         else
         {
+            // Stop current wave timing and immediately start the next wave
             StopCoroutine(waveCoroutine);
             waveCoroutine = StartCoroutine(SpawnWaves(currentWave));
             Debug.Log($"Force started wave {currentWave + 1}!");
         }
     }
 
+    // === WAVE SPAWNING SYSTEM ===
+    // Core coroutine that manages wave timing and progression
+
+    // Main wave management coroutine - handles timing and progression
     private IEnumerator SpawnWaves(int startFromWaveIndex = 0)
     {
         currentWave = startFromWaveIndex;
 
+        // Wait until we're allowed to start spawning waves
         while (!canSpawnWave)
             yield return null;
 
-        while (currentWave < numberOfWaves)
+        // Spawn each wave in sequence
+        while (currentWave < NumberOfWaves)
         {
-            if (currentWave == numberOfWaves - 1 && waveStartButton != null)
+            // Hide the wave start button on the final wave
+            if (currentWave == NumberOfWaves - 1 && WaveStartButton != null)
             {
-                waveStartButton.gameObject.SetActive(false);
+                WaveStartButton.gameObject.SetActive(false);
             }
 
+            // Spawn the current wave
             SpawnWave(currentWave);
             currentWave++;
 
-            if (currentWave >= numberOfWaves)
+            // Break if we've completed all waves
+            if (currentWave >= NumberOfWaves)
                 break;
 
+            // Wait for the specified time between waves
             float timer = 0f;
-            while (timer < timeBetweenWaves)
+            while (timer < TimeBetweenWaves)
             {
                 timer += Time.deltaTime;
                 yield return null;
@@ -96,27 +123,34 @@ public class UnitSpawner : MonoBehaviour
         }
     }
 
+    // Spawn all enemies for a specific wave
     private void SpawnWave(int waveIndex)
     {
-        Debug.Log($"Spawning wave {waveIndex + 1} of {numberOfWaves}");
+        Debug.Log($"Spawning wave {waveIndex + 1} of {NumberOfWaves}");
 
-        for (int i = 0; i < enemyUnitPrefabs.Count; i++)
+        // Spawn each type of enemy unit according to the wave scaling
+        for (int i = 0; i < EnemyUnitPrefabs.Count; i++)
         {
-            int baseCount = baseEnemyCounts[i];
-            int countToSpawn = Mathf.CeilToInt(baseCount * Mathf.Pow(waveCountMultiplier, waveIndex));
+            int baseCount = BaseEnemyCounts[i];
+            // Calculate how many of this enemy type to spawn based on wave progression
+            int countToSpawn = Mathf.CeilToInt(baseCount * Mathf.Pow(WaveCountMultiplier, waveIndex));
 
+            // Spawn each individual enemy of this type
             for (int spawnIndex = 0; spawnIndex < countToSpawn; spawnIndex++)
             {
+                // Find a valid spawn position on the grid edges
                 Vector2Int spawnGridPos = GetRandomEdgeGridPosition();
-                GridNode node = gridManager.GetNode(spawnGridPos.x, spawnGridPos.y);
+                GridNode node = GridManager.GetNode(spawnGridPos.x, spawnGridPos.y);
 
+                // Make sure we found a valid, walkable spawn position
                 if (node == null || !node.Walkable)
                 {
+                    // Try multiple times to find a valid spawn spot
                     bool foundValid = false;
                     for (int tries = 0; tries < 10; tries++)
                     {
                         spawnGridPos = GetRandomEdgeGridPosition();
-                        node = gridManager.GetNode(spawnGridPos.x, spawnGridPos.y);
+                        node = GridManager.GetNode(spawnGridPos.x, spawnGridPos.y);
                         if (node != null && node.Walkable)
                         {
                             foundValid = true;
@@ -130,13 +164,15 @@ public class UnitSpawner : MonoBehaviour
                     }
                 }
 
+                // Spawn the enemy slightly above the ground to prevent embedding
                 Vector3 spawnPos = node.WorldPosition + Vector3.up * 0.5f;
-                GameObject enemy = Instantiate(enemyUnitPrefabs[i], spawnPos, Quaternion.identity);
+                GameObject enemy = Instantiate(EnemyUnitPrefabs[i], spawnPos, Quaternion.identity);
 
+                // Set up the enemy controller and track it
                 UnitController controller = enemy.GetComponent<UnitController>();
                 if (controller != null)
                 {
-                   // controller.OnDeath += HandleEnemyDeath;
+                    // controller.OnDeath += HandleEnemyDeath; // Commented out - would handle enemy death tracking
                     aliveEnemies++;
                 }
             }
@@ -145,23 +181,27 @@ public class UnitSpawner : MonoBehaviour
         Debug.Log($"Wave {waveIndex + 1} spawned with total enemies: {aliveEnemies}");
     }
 
-   
+    // === SPAWN POSITION UTILITIES ===
+    // Helper methods for finding good spawn locations
 
+    // Get a random position along the edges of the grid for enemy spawning
+    // This ensures enemies spawn from the borders and move inward
     private Vector2Int GetRandomEdgeGridPosition()
     {
-        int gridX = gridManager.GridSettings.GridSizeX;
-        int gridY = gridManager.GridSettings.GridSizeY;
+        int gridX = GridManager.GridSettings.GridSizeX;
+        int gridY = GridManager.GridSettings.GridSizeY;
 
+        // Pick a random edge: 0=top, 1=bottom, 2=left, 3=right
         int edge = Random.Range(0, 4);
         int x, y;
 
         switch (edge)
         {
-            case 0: x = Random.Range(0, gridX); y = gridY - 1; break;
-            case 1: x = Random.Range(0, gridX); y = 0; break;
-            case 2: x = 0; y = Random.Range(0, gridY); break;
-            case 3: x = gridX - 1; y = Random.Range(0, gridY); break;
-            default: x = 0; y = 0; break;
+            case 0: x = Random.Range(0, gridX); y = gridY - 1; break; // Top edge
+            case 1: x = Random.Range(0, gridX); y = 0; break;         // Bottom edge
+            case 2: x = 0; y = Random.Range(0, gridY); break;         // Left edge
+            case 3: x = gridX - 1; y = Random.Range(0, gridY); break; // Right edge
+            default: x = 0; y = 0; break;                             // Fallback
         }
 
         return new Vector2Int(x, y);

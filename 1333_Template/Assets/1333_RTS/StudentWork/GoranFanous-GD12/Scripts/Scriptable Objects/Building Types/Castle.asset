@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 113091e02cb2915419cad60160efe13a, type: 3}
   m_Name: Castle
   m_EditorClassIdentifier: 
-  buildingName: castle
+  buildingName: Castle
   buildingSizeX: 3
   buildingSizeY: 3
   buildScale: 0.75

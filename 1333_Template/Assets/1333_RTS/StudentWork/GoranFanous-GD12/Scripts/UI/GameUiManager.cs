@@ -4,29 +4,35 @@ using UnityEngine.Audio;
 
 public class GameUiManager : MonoBehaviour
 {
+    // Singleton instance - ensures we only have one UI manager throughout the game
     public static GameUiManager Instance { get; private set; }
 
+    // UI elements for the building system - shows when player is in build mode
     [Header("Build UI References")]
-    public GameObject buildPanel;
-    public TextMeshProUGUI buildingNameText;
-    public TextMeshProUGUI controlsText;
-    public TextMeshProUGUI costText;
+    public GameObject BuildPanel;
+    public TextMeshProUGUI BuildingNameText;
+    public TextMeshProUGUI ControlsText;
+    public TextMeshProUGUI CostText;
 
+    // UI elements that display current resource amounts to the player
     [Header("Resource UI References")]
-    public TextMeshProUGUI populationText;
-    public TextMeshProUGUI goldText;
-    public TextMeshProUGUI foodText;
+    public TextMeshProUGUI PopulationText;
+    public TextMeshProUGUI GoldText;
+    public TextMeshProUGUI FoodText;
 
+    // Audio controls - lets players adjust volume settings
     [Header("Audio Sliders Panel")]
     [SerializeField] private GameObject audioSliderPanel; // Parent panel of sliders
     [SerializeField] private AudioMixer audioMixer;
 
+    // Game state overlays - shown when the game ends
     [Header("Game Over UI")]
     [SerializeField] private GameObject gameOverOverlay;
     [SerializeField] private GameObject victoryOverlay;
 
     private void Awake()
     {
+        // Standard singleton pattern - destroy duplicates and keep this instance alive
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -39,7 +45,11 @@ public class GameUiManager : MonoBehaviour
     {
         InitializeAudioSliders(); // Ensure all sliders connect to the AudioMixer
     }
-    
+
+    // === GAME STATE UI METHODS ===
+    // Handle showing game over and victory screens
+
+    // Show the game over screen and pause the game
     public void TriggerGameOver()
     {
         if (gameOverOverlay != null)
@@ -48,6 +58,7 @@ public class GameUiManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    // Show the victory screen and pause the game
     public void TriggerVictory()
     {
         if (victoryOverlay != null)
@@ -56,16 +67,24 @@ public class GameUiManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    // === BUILD MODE UI METHODS ===
+    // Handle the UI that appears when players are placing buildings
+
+    // Show the build UI panel and update it with current building info
     public void ShowBuildUI()
     {
-        if (buildPanel != null)
+        if (BuildPanel != null)
         {
-            buildPanel.SetActive(true);
-            UpdateBuildingPreviewUI(); 
+            BuildPanel.SetActive(true);
+            UpdateBuildingPreviewUI();
         }
     }
 
+    // === AUDIO SYSTEM SETUP ===
+    // Initialize audio sliders to work with our audio mixer
 
+    // Set up all audio sliders to connect to the main audio mixer
+    // Uses reflection to inject the mixer reference - bit of a hack but it works
     public void InitializeAudioSliders()
     {
         if (audioSliderPanel == null || audioMixer == null) return;
@@ -82,28 +101,31 @@ public class GameUiManager : MonoBehaviour
         }
     }
 
-
+    // Hide the build UI when player exits build mode
     public void HideBuildUI()
     {
-        if (buildPanel != null)
-            buildPanel.SetActive(false);
+        if (BuildPanel != null)
+            BuildPanel.SetActive(false);
     }
 
+    // Update the build UI with specific building information
     public void UpdateBuildUI(string buildingName, int populationCost, int goldCost)
     {
-        if (buildPanel != null)
-            buildPanel.SetActive(true);
+        if (BuildPanel != null)
+            BuildPanel.SetActive(true);
 
-        if (buildingNameText != null)
-            buildingNameText.text = $"Placing: {buildingName}";
+        if (BuildingNameText != null)
+            BuildingNameText.text = $"Placing: {buildingName}";
 
-        if (controlsText != null)
-            controlsText.text = "Q / E to cycle | R to rotate";
+        if (ControlsText != null)
+            ControlsText.text = "Q / E to cycle | R to rotate";
 
-        if (costText != null)
-            costText.text = $"Population Cost: {populationCost} | Gold Cost: {goldCost}";
+        if (CostText != null)
+            CostText.text = $"Population Cost: {populationCost} | Gold Cost: {goldCost}";
     }
 
+    // Update the build UI based on the currently selected building
+    // This gets called whenever the player switches between different buildings
     public void UpdateBuildingPreviewUI()
     {
         if (!BuildModeController.BMCInstance.IsInBuildMode)
@@ -112,6 +134,7 @@ public class GameUiManager : MonoBehaviour
             return;
         }
 
+        // Get info about the currently selected building from the building manager
         string buildingName = BuildingManager.BMInstance.GetCurrentBuildingName();
         int populationCost = BuildingManager.BMInstance.GetCurrentPopulationCost();
         int goldCost = BuildingManager.BMInstance.GetCurrentGoldCost();
@@ -126,15 +149,19 @@ public class GameUiManager : MonoBehaviour
         }
     }
 
+    // === RESOURCE UI METHODS ===
+    // Keep the resource display updated with current amounts
+
+    // Update all resource displays with current and maximum values
     public void UpdateResourceUI(int population, int maxPop, int gold, int maxGold, int food, int maxFood)
     {
-        if (populationText != null)
-            populationText.text = $"Population: {population} / {maxPop}";
+        if (PopulationText != null)
+            PopulationText.text = $"Population: {population} / {maxPop}";
 
-        if (goldText != null)
-            goldText.text = $"Gold: {gold} / {maxGold}";
+        if (GoldText != null)
+            GoldText.text = $"Gold: {gold} / {maxGold}";
 
-        if (foodText != null)
-            foodText.text = $"Food: {food} / {maxFood}";
+        if (FoodText != null)
+            FoodText.text = $"Food: {food} / {maxFood}";
     }
 }

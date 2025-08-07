@@ -3,29 +3,34 @@ using UnityEngine;
 
 public class AudioManager : MonoBehaviour
 {
+    // Audio source components - each handles a different type of sound
     [Header("Audio Sources")]
-    public AudioSource musicSource;      // For menu or main BGM
-    public AudioSource ambienceSource;   // For ambient/game BGM
-    public AudioSource sfxSource;
+    public AudioSource MusicSource;      // For menu or main BGM
+    public AudioSource AmbienceSource;   // For ambient/game BGM
+    public AudioSource SfxSource;        // For sound effects
 
+    // Lists to hold our sound settings - makes it easy to organize in the inspector
     [Header("Music Settings")]
-    public List<SoundSettings> musicTracks;
+    public List<SoundSettings> MusicTracks;
 
     [Header("Ambience Settings")]
-    public List<SoundSettings> ambienceTracks;
+    public List<SoundSettings> AmbienceTracks;
 
     [Header("SFX Settings")]
-    public List<SoundSettings> sfxClips;
+    public List<SoundSettings> SfxClips;
 
+    // Simple toggles to enable/disable different audio categories
     [Header("Audio Toggles")]
-    public bool sfxEnabled = true;
-    public bool musicEnabled = true;
-    public bool ambienceEnabled = true;
+    public bool SfxEnabled = true;
+    public bool MusicEnabled = true;
+    public bool AmbienceEnabled = true;
 
+    // Singleton instance - ensures we only have one AudioManager across scenes
     public static AudioManager AMInstance;
 
     void Awake()
     {
+        // Standard singleton pattern - keep this instance alive and destroy any duplicates
         if (AMInstance == null)
         {
             AMInstance = this;
@@ -37,17 +42,18 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // === MUSIC ===
+    // === MUSIC METHODS ===
+    // Play background music by name - automatically loops
     public void PlayMusic(string name)
     {
-        if (!musicEnabled) return;
+        if (!MusicEnabled) return;
 
-        AudioClip clip = GetClipByName(musicTracks, name);
+        AudioClip clip = GetClipByName(MusicTracks, name);
         if (clip != null)
         {
-            musicSource.clip = clip;
-            musicSource.loop = true;
-            musicSource.Play();
+            MusicSource.clip = clip;
+            MusicSource.loop = true;
+            MusicSource.Play();
         }
         else
         {
@@ -55,22 +61,24 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    // Stop the currently playing music
     public void StopMusic()
     {
-        musicSource.Stop();
+        MusicSource.Stop();
     }
 
-    // === AMBIENCE ===
+    // === AMBIENCE METHODS ===
+    // Play ambient sounds - things like wind, rain, or environmental audio
     public void PlayAmbience(string name)
     {
-        if (!ambienceEnabled) return;
+        if (!AmbienceEnabled) return;
 
-        AudioClip clip = GetClipByName(ambienceTracks, name);
+        AudioClip clip = GetClipByName(AmbienceTracks, name);
         if (clip != null)
         {
-            ambienceSource.clip = clip;
-            ambienceSource.loop = true;
-            ambienceSource.Play();
+            AmbienceSource.clip = clip;
+            AmbienceSource.loop = true;
+            AmbienceSource.Play();
         }
         else
         {
@@ -78,20 +86,22 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    // Stop ambient sounds
     public void StopAmbience()
     {
-        ambienceSource.Stop();
+        AmbienceSource.Stop();
     }
 
-    // === SFX ===
+    // === SOUND EFFECTS METHODS ===
+    // Play a one-shot sound effect - doesn't interrupt other SFX
     public void PlaySFX(string name)
     {
-        if (!sfxEnabled) return;
+        if (!SfxEnabled) return;
 
-        AudioClip clip = GetClipByName(sfxClips, name);
+        AudioClip clip = GetClipByName(SfxClips, name);
         if (clip != null)
         {
-            sfxSource.PlayOneShot(clip);
+            SfxSource.PlayOneShot(clip);
         }
         else
         {
@@ -99,11 +109,12 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    // Play a sound effect at a specific world position - great for 3D audio
     public void PlaySFXAtPosition(string name, Vector3 position)
     {
-        if (!sfxEnabled) return;
+        if (!SfxEnabled) return;
 
-        AudioClip clip = GetClipByName(sfxClips, name);
+        AudioClip clip = GetClipByName(SfxClips, name);
         if (clip != null)
         {
             AudioSource.PlayClipAtPoint(clip, position);
@@ -114,7 +125,8 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // === CLIP LOOKUP ===
+    // === UTILITY METHODS ===
+    // Helper method to find audio clips by name in our lists
     private AudioClip GetClipByName(List<SoundSettings> list, string name)
     {
         foreach (var item in list)
@@ -125,22 +137,23 @@ public class AudioManager : MonoBehaviour
         return null;
     }
 
-    // === TOGGLES ===
+    // === TOGGLE METHODS ===
+    // These methods let you enable/disable different audio categories at runtime
     public void ToggleSFX(bool enabled)
     {
-        sfxEnabled = enabled;
-        if (!enabled) sfxSource.Stop();
+        SfxEnabled = enabled;
+        if (!enabled) SfxSource.Stop();
     }
 
     public void ToggleMusic(bool enabled)
     {
-        musicEnabled = enabled;
-        if (!enabled) musicSource.Stop();
+        MusicEnabled = enabled;
+        if (!enabled) MusicSource.Stop();
     }
 
     public void ToggleAmbience(bool enabled)
     {
-        ambienceEnabled = enabled;
-        if (!enabled) ambienceSource.Stop();
+        AmbienceEnabled = enabled;
+        if (!enabled) AmbienceSource.Stop();
     }
 }
