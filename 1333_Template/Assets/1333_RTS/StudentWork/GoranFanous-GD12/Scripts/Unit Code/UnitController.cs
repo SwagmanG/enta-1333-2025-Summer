@@ -34,6 +34,14 @@ public class UnitController : MonoBehaviour
     // Pathfinding state management - prevents spam requests
     private bool isRequestingPath = false;
 
+    // Rotation settings
+    private float rotationSpeed = 180f; // Degrees per second
+
+    // Damage flash effect
+    private Renderer unitRenderer;
+    private Color originalColor;
+    private Coroutine flashCoroutine;
+
     // Initial setup - find dependencies and configure unit stats
     private void Awake()
     {
@@ -46,6 +54,13 @@ public class UnitController : MonoBehaviour
         // Set up unit stats from the ScriptableObject data
         currentHealth = unitType != null ? unitType.MaxHp : 10;
         attackCooldown = unitType != null ? 1f / unitType.AttackSpeed : 1f;
+
+        // Set up damage flash effect
+        unitRenderer = GetComponent<Renderer>();
+        if (unitRenderer != null && unitRenderer.material != null)
+        {
+            originalColor = unitRenderer.material.color;
+        }
 
         Debug.Log($"UnitController Awake: Health={currentHealth}, AttackCooldown={attackCooldown}");
     }
@@ -67,6 +82,12 @@ public class UnitController : MonoBehaviour
     private void Update()
     {
         attackTimer += Time.deltaTime;
+
+        // Rotate towards target building if we have one
+        if (currentTarget != null)
+        {
+            RotateTowardsTarget(currentTarget.transform.position);
+        }
 
         // Only do combat logic if we have a target and know where to attack from
         if (currentTarget != null && currentTargetNode != null)
@@ -98,6 +119,19 @@ public class UnitController : MonoBehaviour
                     RequestPath(currentTargetNode.WorldPosition);
                 }
             }
+        }
+    }
+
+    // Smoothly rotate the unit to face a target position
+    private void RotateTowardsTarget(Vector3 targetPosition)
+    {
+        Vector3 direction = (targetPosition - transform.position).normalized;
+        direction.y = 0; // Keep rotation only on the Y-axis (horizontal plane)
+
+        if (direction != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
     }
 
@@ -286,6 +320,12 @@ public class UnitController : MonoBehaviour
     {
         currentHealth -= damage;
 
+        // Start damage flash effect
+        if (unitRenderer != null && flashCoroutine == null)
+        {
+            flashCoroutine = StartCoroutine(FlashDamageEffect());
+        }
+
         if (currentHealth <= 0)
         {
             // Clean up grid occupation before dying
@@ -297,6 +337,26 @@ public class UnitController : MonoBehaviour
 
             Destroy(gameObject);
         }
+    }
+
+    // Flash red when taking damage
+    private IEnumerator FlashDamageEffect()
+    {
+        if (unitRenderer == null || unitRenderer.material == null)
+        {
+            flashCoroutine = null;
+            yield break;
+        }
+
+        // Flash red briefly
+        unitRenderer.material.color = Color.red;
+        yield return new WaitForSeconds(0.1f);
+
+        // Return to original color
+        unitRenderer.material.color = originalColor;
+        yield return new WaitForSeconds(0.05f);
+
+        flashCoroutine = null;
     }
 
     // Request a path to a destination - this is the main interface for movement

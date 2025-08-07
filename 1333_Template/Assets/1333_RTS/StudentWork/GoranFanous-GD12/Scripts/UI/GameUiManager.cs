@@ -82,7 +82,7 @@ public class GameUiManager : MonoBehaviour
             int seconds = Mathf.FloorToInt(countdownTime % 60f);
 
             if (waveCountdownText != null)
-                waveCountdownText.text = $"Wave spawns in: {minutes:00}:{seconds:00}";
+                waveCountdownText.text = $"{minutes:00}:{seconds:00}";
 
             countdownTime -= Time.deltaTime;
             yield return null;

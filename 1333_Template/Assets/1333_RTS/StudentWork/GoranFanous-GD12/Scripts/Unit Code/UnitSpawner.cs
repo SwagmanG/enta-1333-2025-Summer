@@ -15,15 +15,11 @@ public class UnitSpawner : MonoBehaviour
 
     // Configuration for how waves work and scale over time
     [Header("Wave Settings")]
-    [SerializeField] private int NumberOfWaves = 5;           // Total waves in the game
-    [SerializeField] private float TimeBetweenWaves = 10f;    // How long to wait between waves
-    [SerializeField] private float WaveCountMultiplier = 1.2f; // How much enemy count increases each wave
-    [SerializeField] private List<int> BaseEnemyCounts;       // Starting count for each enemy type
+    [SerializeField] private int numberOfWaves = 5;           // Total waves in the game
+    [SerializeField] private float waveCountMultiplier = 1.2f; // How much enemy count increases each wave
+    [SerializeField] private List<int> baseEnemyCounts;       // Starting count for each enemy type
 
-    // UI element that lets players manually start waves
-    [Header("UI References")]
-    [SerializeField] private Button WaveStartButton;
-
+  
     // Internal state tracking for the wave system
     private int currentWave = 0;           // Which wave we're currently on
     private Camera mainCamera;             // Reference to main camera
@@ -48,18 +44,21 @@ public class UnitSpawner : MonoBehaviour
 
         // Auto-generate base enemy counts if not properly configured
         // This ensures we have a count for each enemy type
-        if (BaseEnemyCounts == null || BaseEnemyCounts.Count != EnemyUnitPrefabs.Count)
+        if (baseEnemyCounts == null || baseEnemyCounts.Count != EnemyUnitPrefabs.Count)
         {
-            BaseEnemyCounts = new List<int>(new int[EnemyUnitPrefabs.Count]);
-            for (int i = 0; i < BaseEnemyCounts.Count; i++)
+            baseEnemyCounts = new List<int>(new int[EnemyUnitPrefabs.Count]);
+            for (int i = 0; i < baseEnemyCounts.Count; i++)
             {
-                BaseEnemyCounts[i] = 1;
+                baseEnemyCounts[i] = 1;
             }
         }
 
-        // Start the wave spawning system
-        waveCoroutine = StartCoroutine(SpawnWaves());
+        canSpawnWave = true; //Enable wave spawning immediately
+
+        // Start the wave countdown system immediately
+        waveCoroutine = StartCoroutine(CountdownToNextWave(currentWave));
     }
+
 
     // === WAVE CONTROL METHODS ===
     // Handle manual wave starting and management
@@ -67,22 +66,12 @@ public class UnitSpawner : MonoBehaviour
     // Allow players or other systems to force start the current wave
     public void ForceStartCurrentWave()
     {
-        Debug.Log("Wave Start");
-
-        if (!canSpawnWave)
-        {
-            canSpawnWave = true;
-            Debug.Log("Force started first wave!");
-            StartCoroutine(CountdownToNextWave(currentWave)); // start countdown with optional manual trigger
-
-        }
-        else
-        {
+        if (waveCoroutine != null)
             StopCoroutine(waveCoroutine);
-            waveCoroutine = StartCoroutine(SpawnWaves(currentWave));
-            Debug.Log($"Force started wave {currentWave + 1}!");
-        }
+
+        waveCoroutine = StartCoroutine(CountdownToNextWave(currentWave)); // auto-start countdown
     }
+
 
     // === WAVE SPAWNING SYSTEM ===
     // Core coroutine that manages wave timing and progression
@@ -97,20 +86,17 @@ public class UnitSpawner : MonoBehaviour
             yield return null;
 
         // Spawn each wave in sequence
-        while (currentWave < NumberOfWaves)
+        while (currentWave < numberOfWaves)
         {
             // Hide the wave start button on the final wave
-            if (currentWave == NumberOfWaves - 1 && WaveStartButton != null)
-            {
-                WaveStartButton.gameObject.SetActive(false);
-            }
+            
 
             // Spawn the current wave
             SpawnWave(currentWave);
             currentWave++;
 
             // Break if we've completed all waves
-            if (currentWave >= NumberOfWaves)
+            if (currentWave >= numberOfWaves)
                 break;
 
 
@@ -128,14 +114,14 @@ public class UnitSpawner : MonoBehaviour
     // Spawn all enemies for a specific wave
     private void SpawnWave(int waveIndex)
     {
-        Debug.Log($"Spawning wave {waveIndex + 1} of {NumberOfWaves}");
+        Debug.Log($"Spawning wave {waveIndex + 1} of {numberOfWaves}");
 
         // Spawn each type of enemy unit according to the wave scaling
         for (int i = 0; i < EnemyUnitPrefabs.Count; i++)
         {
-            int baseCount = BaseEnemyCounts[i];
+            int baseCount = baseEnemyCounts[i];
             // Calculate how many of this enemy type to spawn based on wave progression
-            int countToSpawn = Mathf.CeilToInt(baseCount * Mathf.Pow(WaveCountMultiplier, waveIndex));
+            int countToSpawn = Mathf.CeilToInt(baseCount * Mathf.Pow(waveCountMultiplier, waveIndex));
 
             // Spawn each individual enemy of this type
             for (int spawnIndex = 0; spawnIndex < countToSpawn; spawnIndex++)
@@ -187,43 +173,18 @@ public class UnitSpawner : MonoBehaviour
     private IEnumerator CountdownToNextWave(int waveIndex)
     {
         float countdownTime = 60f + (waveIndex * 30f); // 1:00, 1:30, etc.
-        bool waveStarted = false;
-
-        void ManualStart()
-        {
-            if (!waveStarted)
-            {
-                waveStarted = true;
-                if (WaveStartButton != null)
-                    WaveStartButton.onClick.RemoveListener(ManualStart);
-
-                StopCoroutine(nameof(CountdownToNextWave));
-                waveCoroutine = StartCoroutine(SpawnWaves(waveIndex));
-            }
-        }
-
-        if (WaveStartButton != null)
-        {
-            WaveStartButton.gameObject.SetActive(true);
-            WaveStartButton.onClick.AddListener(ManualStart);
-        }
 
         GameUiManager.Instance.StartWaveCountdown(waveIndex);
 
-        while (countdownTime > 0f && !waveStarted)
+        while (countdownTime > 0f)
         {
             countdownTime -= Time.deltaTime;
             yield return null;
         }
 
-        if (!waveStarted)
-        {
-            if (WaveStartButton != null)
-                WaveStartButton.onClick.RemoveListener(ManualStart);
-
-            waveCoroutine = StartCoroutine(SpawnWaves(waveIndex));
-        }
+        waveCoroutine = StartCoroutine(SpawnWaves(waveIndex));
     }
+
 
 
     // === SPAWN POSITION UTILITIES ===
